@@ -1,0 +1,25 @@
+{
+  "name": "superjs",
+  "author": {
+    "name": "Aaron Storck",
+    "email": "aaronstorck@gmail.com"
+  },
+  "version": "0.0.8",
+  "description": "Super-configurable, super-extendable, API framework for Node.JS.",
+  "main": "index.js",
+  "repository": "",
+  "dependencies": {
+    "express": "~4.1.1",
+    "morgan": "~1.0.1",
+    "underscore": "~1.6.0",
+    "bluebird": "~1.2.4",
+    "waterline": "git+https://github.com/balderdashy/waterline.git",
+    "passport": "~0.2.0"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://links.sailsjs.org/license/mit"
+    }
+  ]
+}
