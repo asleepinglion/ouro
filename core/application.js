@@ -12,6 +12,7 @@ var express = require('express'),
   events = require('events'),
   util = require('util'),
   fs = require('fs'),
+  path = require('path'),
   domain = require('domain'),
   _ = require('underscore'),
   Promise = require('bluebird');
@@ -20,6 +21,36 @@ module.exports = Class.extend({
 
   //initialize the application
   _init: function() {
+
+    //console log emblem
+    console.log("\n               Super.JS - Super Extendable API Framework");
+    console.log("              .<@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@>.");
+    console.log("            .<@@@@@@   $$$$$$$$$$$$$$$$$$$$$\\^^^^^^/$$$$@@@>.");
+    console.log("         .<@@@@@<   .$$$$$'~       '~'$$$$$$$\\  /$$$$$$>@@@@@>.");
+    console.log("      .<@@@@@<'   o$$$$$$                `'$$$$$$$$$$$$  '>@@@@@>.");
+    console.log("   .<@@@@@<'    o$$$$$$oo.                  )$$$$$$$$$$     '>@@@@@>.");
+    console.log("   '<@@@@@<    o$$$$$$$$$$$.                                 >@@@@@>'");
+    console.log("     '<@@@@<  o$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$oooooo...    >@@@@>'");
+    console.log("       '@@@@< $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$)>@@@@>'");
+    console.log("         '<@@@@$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$@@@@>'");
+    console.log("           '<@@@@$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$@@@@>'");
+    console.log("             '<@@@@<    .oooo.                    .$$@@@@>'");
+    console.log("               '<@@@@oo$$$$$$$o..             ..o$$@@@@>'");
+    console.log("                 '<@@@@$$$$$$$$$$$$$oooooooo$$$$$@@@@>'");
+    console.log("                   '<@@@@'$$$$$$$$$$$$$$$$$$$$$@@@@>'");
+    console.log("                     '<@@@@<   ~'SSSSSS'~   >@@@@>'");
+    console.log("                       '<@@@@<            >@@@@>'");
+    console.log("                         '<@@@@<        >@@@@>'");
+    console.log("                           '<@@@@<    >@@@@>'");
+    console.log("                             '<@@@@<>@@@@>'");
+    console.log("                               '<@@@@@@>'");
+    console.log("                                 '<@@>'");
+    console.log("                                   ^^\n");
+
+    console.log('SuperJS Version: '+require('../package.json').version);
+
+    //set application path
+    this.appPath = path.dirname(process.mainModule.filename);
 
     //load configuration
     this._loadConfiguration();
@@ -42,6 +73,7 @@ module.exports = Class.extend({
     this._initBodyParser();
     this._initLogger();
     this._initAuthentication();
+    this._loadMiddleware();
     this._setupOrm();
     this._loadModels();
     this._initOrm();
@@ -50,28 +82,19 @@ module.exports = Class.extend({
 
   },
 
-  /*
-   TODO: write error manager
-   _errorHandler: function(err) {
-
-   //do stuff based on this.config.errors
-   //loop thru perform actions
-   },
-   */
-
   //load configuration
   _loadConfiguration: function() {
 
     this.config = {};
 
     //attempt to load the package json
-    this.config.package = require(__dirname+'/../../../package.json');
+    this.config.package = require(this.appPath+'/package.json');
 
     //attempt to load data configuration
-    this.config.data = require(__dirname+'/../../../config/data');
+    this.config.data = require(this.appPath+'/config/data');
 
     //attempt to load security configuration
-    this.config.security = require(__dirname+'/../../../config/security');
+    this.config.security = require(this.appPath+'/config/security');
 
   },
 
@@ -98,6 +121,7 @@ module.exports = Class.extend({
 
   },
 
+  //init request logger for development
   _initLogger: function() {
 
     //log all requests to console for development
@@ -106,6 +130,7 @@ module.exports = Class.extend({
 
   },
 
+  //initialize authentication
   _initAuthentication: function() {
 
     //maintain reference to self
@@ -125,6 +150,13 @@ module.exports = Class.extend({
       }));
 
     }
+  },
+
+  //load additional middleware
+  _loadMiddleware: function() {
+
+    //override hook for additional middleware
+
   },
 
   //initialize the waterline ORM
@@ -156,9 +188,9 @@ module.exports = Class.extend({
     modules.map(function(moduleName) {
 
       //make sure the controller exists
-      if( fs.existsSync(__dirname+'/../../../modules/'+moduleName+'/model.js') ) {
+      if( fs.existsSync(self.appPath+'/modules/'+moduleName+'/model.js') ) {
 
-        var Model = require(__dirname+'/../../../modules/'+moduleName+'/model');
+        var Model = require(self.appPath+'/modules/'+moduleName+'/model');
 
         if( Model ) {
           self.orm.loadCollection(Model);
@@ -182,15 +214,15 @@ module.exports = Class.extend({
 
       //TODO: retry/manage app.ormReady state
       if(err) {
-        console.log('DB Connection failed:');
+        console.log('ORM failed to initialize:');
         console.log(err);
 
       } else {
-        console.log('Connection established to database(s)...');
+        console.log('The ORM is Now Ready...');
         self.models = models.collections;
         self.connections = models.connections;
 
-        self.emit('ormReady', models.collections);
+        self._emit('ormReady', models.collections);
       }
     });
 
@@ -212,9 +244,9 @@ module.exports = Class.extend({
     modules.map(function(moduleName) {
 
       //make sure the controller exists
-      if( fs.existsSync(__dirname+'/../../../modules/'+moduleName+'/controller.js') ) {
+      if( fs.existsSync(self.appPath+'/modules/'+moduleName+'/controller.js') ) {
 
-        var Controller = require(__dirname+'/../../../modules/'+moduleName+'/controller');
+        var Controller = require(self.appPath+'/modules/'+moduleName+'/controller');
 
         if( Controller ) {
           self.controllers[moduleName] = new Controller(self);
@@ -265,7 +297,25 @@ module.exports = Class.extend({
   //send default response
   _describeResponse: function(req, res) {
 
-    var response = {name: this.config.package.name, version: this.config.package.version, success: true, controllers: Object.keys(this.controllers), models: Object.keys(this.models)};
+    //init response object
+    var response = {name: this.config.package.name, version: this.config.package.version, success: true, controllers: {}};
+
+    //loop through controllers
+    for( var controllerName in this.controllers ) {
+
+      response.controllers[controllerName] = [];
+
+      //loop through methods
+      for( var method in this.controllers[controllerName] ) {
+
+        //don't expose internal methods
+        if( typeof this.controllers[controllerName][method] === 'function' && method.substr(0,1) !== '_' ) {
+          response.controllers[controllerName].push(method);
+        }
+      }
+
+    }
+
     res.json(response);
 
   },
@@ -327,7 +377,7 @@ module.exports = Class.extend({
           req.controller = path[1];
 
           //do not allow access to internal methods
-          if( path[2].substring(0,1) !== '_') {
+          if( path[2].substring(0,1) !== '_' ) {
 
             //check if action exists on controller
             if( path[2] in this.controllers[path[1]]) {
@@ -341,7 +391,7 @@ module.exports = Class.extend({
 
       if( !req.controller ) {
         this._setResponse({success: false, message: 'Controller not found.'}, res);
-        this._sendResponse(req,res);
+        return this._sendResponse(req,res);
       }
 
       if( !req.action ) {
@@ -349,14 +399,14 @@ module.exports = Class.extend({
           this._setResponse({success: false, message: 'REST Controller method '+req.method+' invalid.'}, res);
         else
           this._setResponse({success: false, message: 'Controller RPC method not found.'}, res);
-        this._sendResponse(req,res);
+        return this._sendResponse(req,res);
       }
 
       return next();
 
     }
 
-    this._sendResponse(req,res);
+    return this._sendResponse(req,res);
 
   },
 
@@ -416,7 +466,7 @@ module.exports = Class.extend({
     var self = this;
 
     //emit beforeAction event for secondary procedures
-    this.controllers[req.controller].emit('beforeAction', req);
+    this.controllers[req.controller]._emit('beforeAction', req);
 
     //call before action method
     this.controllers[req.controller]._beforeAction(req, function(response) {
@@ -439,7 +489,7 @@ module.exports = Class.extend({
           self._setResponse(response, res);
 
           //emit afterAction event for secondary procedures
-          self.controllers[req.controller].emit('afterAction', req, res.response);
+          self.controllers[req.controller]._emit('afterAction', req, res.response);
 
           self._sendResponse(req, res);
 
@@ -474,7 +524,7 @@ module.exports = Class.extend({
   },
 
   //start server
-  startServer: function() {
+  start: function() {
 
     //define port
     var port = process.env.PORT || this.config.port || 8888;
@@ -483,7 +533,7 @@ module.exports = Class.extend({
     //start listening on port
     this.express.listen(port);
 
-    this.emit('serverStarted');
+    this._emit('started');
 
   }
 

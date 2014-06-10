@@ -16,7 +16,7 @@ module.exports = Class.extend({
     //maintain reference to self
     var self = this;
 
-    this.app.on('ormReady', function(models) {
+    this.app._on('ormReady', function(models) {
 
       //store reference to models
       self.models = app.models;

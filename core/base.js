@@ -18,8 +18,7 @@ var Class = function(){};
 
 // Create a new Class that inherits from this class
 Class.extend = function(prop) {
-  // Make the base class inherit from EventEmitter so we can do .emit() and .on()
-  //this.prototype.__proto__ = EventEmitter.prototype;
+
   var _super = this.prototype;
 
   // Instantiate a base class (but only create the instance,
@@ -30,6 +29,7 @@ Class.extend = function(prop) {
 
   // Copy the properties over onto the new prototype
   for (var name in prop) {
+
     // Check if we're overwriting an existing function
     prototype[name] = typeof prop[name] == "function" &&
       typeof _super[name] == "function" && fnTest.test(prop[name]) ?
@@ -68,6 +68,20 @@ Class.extend = function(prop) {
   return Class;
 };
 
-//export extend from EventEmitter
-EventEmitter.extend = Class.extend;
-module.exports = EventEmitter;
+//Create new class for SuperJS EventEmitter
+var SuperEventEmitter = function() {};
+
+//Internalize Event Emitter methods
+for( var prop in EventEmitter.prototype ) {
+  if( typeof EventEmitter.prototype[prop] === 'function')
+    SuperEventEmitter.prototype['_'+prop] = EventEmitter.prototype[prop];
+  else
+    SuperEventEmitter.prototype[prop] = EventEmitter.prototype[prop];
+}
+
+//Add class extension
+SuperEventEmitter.extend = Class.extend;
+
+//export base class
+module.exports = SuperEventEmitter;
+

@@ -1,0 +1,12 @@
+{
+  "name": "myApi",
+  "version": "0.0.1",
+  "description": "SuperJS Starter App",
+  "main": "app.js",
+  "repository": "",
+  "dependencies": {
+    "superjs": "git+https://github.com/asleepinglion/superjs.git",
+    "waterline-mysql": "git+https://github.com/balderdashy/sails-mysql.git",
+    "passport-http": "~0.2.2"
+  }
+}
