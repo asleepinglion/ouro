@@ -177,28 +177,51 @@ module.exports = Class.extend({
     //maintain reference to self
     var self = this;
 
-    //TODO: support alternate folder structure
-    //get list of modules
-    var modules = fs.readdirSync('./modules');
-
     //maintain quick list of loaded models for console
     var loadedModels = [];
 
-    //load each controller
-    modules.map(function(moduleName) {
+    //check if files are stored in modules or by type
+    if( fs.existsSync(self.appPath+'/modules') ) {
 
-      //make sure the controller exists
-      if( fs.existsSync(self.appPath+'/modules/'+moduleName+'/model.js') ) {
+      //get list of modules
+      var modules = fs.readdirSync(self.appPath+'/modules');
 
-        var Model = require(self.appPath+'/modules/'+moduleName+'/model');
+      //load each controller
+      modules.map(function(moduleName) {
+
+        //make sure the controller exists
+        if( fs.existsSync(self.appPath+'/modules/'+moduleName+'/model.js') ) {
+
+          var Model = require(self.appPath+'/modules/'+moduleName+'/model');
+
+          if( Model ) {
+            self.orm.loadCollection(Model);
+            loadedModels.push(moduleName);
+          }
+        }
+
+      });
+
+    } else if( fs.existsSync(self.appPath+'/models') ) {
+
+      //get list of models
+      var models = fs.readdirSync(self.appPath+'/models');
+
+      //load each controller
+      models.map(function(modelName) {
+
+        modelName = modelName.split('.')[0];
+
+        var Model = require(self.appPath+'/models/'+modelName);
 
         if( Model ) {
           self.orm.loadCollection(Model);
-          loadedModels.push(moduleName);
+          loadedModels.push(modelName);
         }
-      }
 
-    });
+      });
+
+    }
 
     console.log('models loaded:',loadedModels);
 
@@ -236,24 +259,46 @@ module.exports = Class.extend({
     //maintain reference to self
     var self = this;
 
-    //TODO: support alternate folder structure
-    //get list of modules
-    var modules = fs.readdirSync('./modules');
+    //check if files are stored in modules or by type
+    if( fs.existsSync(self.appPath+'/modules') ) {
 
-    //load each controller
-    modules.map(function(moduleName) {
+      //get list of modules
+      var modules = fs.readdirSync(self.appPath+'/modules');
 
-      //make sure the controller exists
-      if( fs.existsSync(self.appPath+'/modules/'+moduleName+'/controller.js') ) {
+      //load each controller
+      modules.map(function(moduleName) {
 
-        var Controller = require(self.appPath+'/modules/'+moduleName+'/controller');
+        //make sure the controller exists
+        if (fs.existsSync(self.appPath + '/modules/' + moduleName + '/controller.js')) {
 
-        if( Controller ) {
-          self.controllers[moduleName] = new Controller(self);
+          var Controller = require(self.appPath + '/modules/' + moduleName + '/controller');
+
+          if (Controller) {
+            self.controllers[moduleName] = new Controller(self);
+          }
         }
-      }
 
-    });
+      });
+
+    } else if( fs.existsSync(self.appPath+'/controllers') ) {
+
+      //get list of modules
+      var controllers = fs.readdirSync(self.appPath+'/controllers');
+
+      //load each controller
+      controllers.map(function(controllerName) {
+
+        controllerName = controllerName.split('.')[0];
+
+        var Controller = require(self.appPath + '/controllers/' + controllerName);
+
+        if (Controller) {
+          self.controllers[controllerName] = new Controller(self);
+        }
+
+      });
+
+    }
 
     console.log('controllers loaded:',Object.keys(this.controllers));
 

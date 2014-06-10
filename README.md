@@ -9,7 +9,7 @@ Super.JS is an API framework for Node.JS which provides a clean way to structure
 
 - **Simple Inheritance** Everything inherits from a simple base class which itself inherits from Node's native EventEmitter class.
 
-- **Clean Folder Structure** Either store controllers and models together (e.g. modules/address/controller.js, modules/address/model.js) or grouped by type (e.g. controllers/address.js, models/address.js).
+- **Clean Folder Structure** Either store controllers and models grouped by resource (e.g. modules/address/controller.js, modules/address/model.js) or grouped by type (e.g. controllers/address.js, models/address.js).
 
 - **Automatic Routing** Requests route to controller methods automatically. A simple underscore prefix allows some methods to remain internal and unexposed. 
 
@@ -46,7 +46,6 @@ Super.JS is an API framework for Node.JS which provides a clean way to structure
 **Installation**
 
 ```
-//not currently registered
 npm install superjs
 
 ```
