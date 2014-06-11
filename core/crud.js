@@ -24,11 +24,17 @@ module.exports = Controller.extend({
     var self = this;
 
     //validate parameters
-    var params = req.body || {};
+    var where = req.param('where');
+    var sort = req.param('sort');
+    var limit = req.param('limit');
+    var skip = req.param('skip') || 0;
 
     //search database
     this.model.find()
-      .where(params)
+      .where(where)
+      .limit(limit)
+      .skip(skip)
+      .sort(sort)
       .then(function(results) {
         callback({success: true, message: "Successfully searched the " + self.name + " database...", results: results});
       }).fail( function(err) {
