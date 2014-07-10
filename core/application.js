@@ -69,8 +69,8 @@ module.exports = Class.extend({
 
     console.log('server initializing...');
 
-    //configure and start server
-    this._initCors();
+    //server initialization
+    this._initCORS();
     this._initBodyParser();
     this._initLogger();
     this._initAuthentication();
@@ -100,7 +100,7 @@ module.exports = Class.extend({
   },
 
   //init CORS (cross origin resource sharing)
-  _initCors: function() {
+  _initCORS: function() {
 
     var cors = require('cors');
 
