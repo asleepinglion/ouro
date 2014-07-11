@@ -4,7 +4,7 @@
     "name": "Aaron Storck",
     "email": "aaronstorck@gmail.com"
   },
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Super-configurable, super-extendable, API framework for Node.JS.",
   "main": "index.js",
   "repository": "https://github.com/asleepinglion/superjs",
@@ -14,7 +14,6 @@
     "cors": "^2.3.1",
     "express": "~4.1.1",
     "morgan": "~1.0.1",
-    "passport": "~0.2.0",
     "underscore": "~1.6.0",
     "waterline": "git+https://github.com/balderdashy/waterline.git"
   },

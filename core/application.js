@@ -70,10 +70,6 @@ module.exports = Class.extend({
     console.log('server initializing...');
 
     //server initialization
-    this._initCORS();
-    this._initBodyParser();
-    this._initLogger();
-    this._initAuthentication();
     this._loadMiddleware();
     this._setupOrm();
     this._loadModels();
@@ -140,32 +136,13 @@ module.exports = Class.extend({
 
   },
 
-  //initialize authentication
-  _initAuthentication: function() {
-
-    //maintain reference to self
-    var self = this;
-
-    //enable passport authentication
-    this.passport = require('passport');
-
-    if( this.config.security.enabled ) {
-
-      //initialize passport middleware
-      this.express.use(this.passport.initialize());
-
-      //setup strategy based on security.js configuration
-      this.passport.use(new this.config.security.strategy(this.config.security.options, function() {
-        self.config.security.validator.apply(self, arguments);
-      }));
-
-    }
-  },
 
   //load additional middleware
   _loadMiddleware: function() {
 
-    //override hook for additional middleware
+    this._initCORS();
+    this._initBodyParser();
+    this._initLogger();
 
   },
 
@@ -487,26 +464,33 @@ module.exports = Class.extend({
 
     } else {
 
-      //execute authenticate strategy
-      this.passport.authenticate(this.config.security.type, function(err, user, info) {
+      //determine controller name for auth
+      var controllerName = ( this.config.security.controllerName ) ? this.config.security.controllerName : 'user';
 
-        if(err) {
-          self._setResponse({success: false, message: 'An error occurred trying to authenticate your request.'}, res);
-          self._sendResponse(req, res);
-        }
+      //make sure the _authorize method has been implemented on the auth controller
+      if( !this.controllers[controllerName] || !this.controllers[controllerName]._authorize ) {
+        console.log("The "+controllerName+" controller's _authorize method has not been implemented.");
+        this._setResponse({success: false, message: "The "+controllerName+" controller's _authorize method has not been implemented."}, res);
+        return this._sendResponse(req,res);
+      }
 
-        if(!user) {
-          self._setResponse({success: false, message: 'Your request could not be authenticated.'}, res);
-          self._sendResponse(req, res);
-        }
+      //execute authorize method on the auth controller
+      this.controllers[controllerName]._authorize(req, function(err, user) {
 
-        //log the user into the request
-        req.login(user, self.config.security.options, function(err) {
-          if(err) next(err);
+        if( err || !user) {
+
+          //if there was an error or the user was not found return failure
+          self._setResponse({success: false, message: "Authentication failed.", error: err}, res);
+          return self._sendResponse(req,res);
+
+        } else {
+
+          //otherwise continue to process request
+          console.log('request authenticated!');
           return next();
-        });
+        }
 
-      })(req, res, next);
+      });
 
     }
 
