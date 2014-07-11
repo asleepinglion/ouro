@@ -13,7 +13,7 @@ Super.JS is an API framework for Node.JS which provides a clean way to structure
 
 - **Automatic Routing** Requests route to controller methods automatically. A simple underscore prefix allows some methods to remain internal and unexposed. 
 
-- **Authentication** Incorporates Passport.JS and allows you to configure an authenticaton strategy of your choosing via a configuration file.
+- **Authentication** Incorporates Custom Authentication Hooks allowing you to implement whatever authentication method works for you. The default provided example demonstrates a token based approach. 
 
 - **Public Methods** A simple array on the controller lets you configure specific methods to bypass authentication and remain open to the public.
 
@@ -27,7 +27,7 @@ Super.JS is an API framework for Node.JS which provides a clean way to structure
 
 - **Easy Overrides** Full support for super methods provides the ability to override methods of a parent class and call the parent method from inside the extended method ( *this.super()* ).
 
-- **Before/After Action Methods** Easily modify the response object before or after the action requested is executed by overriding the controllers _beforeAction and _afterAction methods. 
+- **Before/After Action Hooks** Easily modify the response object before or after the action requested is executed by overriding the controllers _beforeAction and _afterAction methods. 
 
 - **JSON Response** Automatic management of JSON response object. Simply modify the resposne object during the chain of execution and it is automatically passed back to the user at the end of the request.
 
@@ -287,40 +287,23 @@ module.exports = {
 /*
  * Security Configuration *
  *
- * Use the security configuration to manage the security of your application:
+ * Use the security configuration to manage the security of your application: *
  *
  */
 
 module.exports = {
 
-  //enable or disable passport authentication
+  //enable or disable api security
   enabled: true,
 
-  //pass in the strategy class
-  type: 'basic',
-  strategy: require('passport-http').BasicStrategy,
+  //name of the controller which has auth methods
+  //controllerName: 'user',
 
-  //set strategy options
-  options: {session: false},
+  //security secret used for creating tokens
+  secret: 'your-dirty-little-secret',
 
-  //provide the validator method used to authenticate
-  validator: function(username, password, done) {
-
-    console.log('checking credentials...');
-
-    this.models['user'].findOne()
-      .where({
-        or: [{email: username }, {phone: username } ],
-        passwordHash: password
-      })
-      .then(function(user) {
-        if (!user) { return done(null, false, {message: "The credentials you provided were not valid."}); }
-        return done(null, user);
-      })
-      .fail(function(err) {
-        return done(null, false, {message: "An error occurred trying to authenticate."});
-      });
-  }
+  //token expiration length in seconds
+  tokenExpiration: 1800
 
 };
 
