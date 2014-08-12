@@ -24,7 +24,6 @@ module.exports = Class.extend({
 
 
     //console log emblem
-    console.log("\n           Super.JS - Super Extendable API Framework");
     console.log("  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs  ");
     console.log(" d%%SP  .SS       SS.  .SS~YS%%b    d%%SP  .SS~YS%%b      .SS   d%%SP  ");
     console.log("d%S'    S%S       S%S  S%S   `S%b  d%S'    S%S   `S%b     S%S  d%S'    ");
