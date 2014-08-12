@@ -22,30 +22,23 @@ module.exports = Class.extend({
   //initialize the application
   _init: function() {
 
+
     //console log emblem
-    console.log("\n               Super.JS - Super Extendable API Framework");
-    console.log("              .<@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@>.");
-    console.log("            .<@@@@@@   $$$$$$$$$$$$$$$$$$$$$\\^^^^^^/$$$$@@@>.");
-    console.log("         .<@@@@@<   .$$$$$'~       '~'$$$$$$$\\  /$$$$$$>@@@@@>.");
-    console.log("      .<@@@@@<'   o$$$$$$                `'$$$$$$$$$$$$  '>@@@@@>.");
-    console.log("   .<@@@@@<'    o$$$$$$oo.                  )$$$$$$$$$$     '>@@@@@>.");
-    console.log("   '<@@@@@<    o$$$$$$$$$$$.                                 >@@@@@>'");
-    console.log("     '<@@@@<  o$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$oooooo...    >@@@@>'");
-    console.log("       '@@@@< $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$)>@@@@>'");
-    console.log("         '<@@@@$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$@@@@>'");
-    console.log("           '<@@@@$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$@@@@>'");
-    console.log("             '<@@@@<    .oooo.                    .$$@@@@>'");
-    console.log("               '<@@@@oo$$$$$$$o..             ..o$$@@@@>'");
-    console.log("                 '<@@@@$$$$$$$$$$$$$oooooooo$$$$$@@@@>'");
-    console.log("                   '<@@@@'$$$$$$$$$$$$$$$$$$$$$@@@@>'");
-    console.log("                     '<@@@@<   ~'SSSSSS'~   >@@@@>'");
-    console.log("                       '<@@@@<            >@@@@>'");
-    console.log("                         '<@@@@<        >@@@@>'");
-    console.log("                           '<@@@@<    >@@@@>'");
-    console.log("                             '<@@@@<>@@@@>'");
-    console.log("                               '<@@@@@@>'");
-    console.log("                                 '<@@>'");
-    console.log("                                   ^^\n");
+    console.log("\n           Super.JS - Super Extendable API Framework");
+    console.log("  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs  ");
+    console.log(" d%%SP  .SS       SS.  .SS~YS%%b    d%%SP  .SS~YS%%b      .SS   d%%SP  ");
+    console.log("d%S'    S%S       S%S  S%S   `S%b  d%S'    S%S   `S%b     S%S  d%S'    ");
+    console.log("S%|     S%S       S%S  S%S    S%S  S%S     S%S    S%S     S%S  S%|     ");
+    console.log("S&S     S&S       S&S  S%S    d*S  S&S     S%S    d*S     S&S  S&S     ");
+    console.log("Y&Ss    S&S       S&S  S&S   .S*S  S&S_Ss  S&S   .S*S     S&S  Y&Ss    ");
+    console.log("`S&&S   S&S       S&S  S&S_sdSSS   S&S~SP  S&S_sdSSS      S&S  `S&&S   ");
+    console.log("  `S*S  S&S       S&S  S&S~YSSY    S&S     S&S~YSY%b      S&S    `S*S  ");
+    console.log("   l*S  S*b       d*S  S*S         S*b     S*S   `S%b     d*S     l*S  ");
+    console.log("  .S*P  S*S.     .S*S  S*S         S*S.    S*S    S%S    .S*S    .S*P  ");
+    console.log("sSS*S    SSSbs_sdSSS   S*S          SSSbs  S*S    S&S  sdSSS   sSS*S   ");
+    console.log("YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS  YSSY    YSS'    ");
+    console.log("                       SP                  SP                          ");
+    console.log("                       Y                   Y                           \n");
 
     console.log('SuperJS Version: '+require('../package.json').version);
 
@@ -107,14 +100,17 @@ module.exports = Class.extend({
   //load body parser
   _initBodyParser: function() {
 
-    console.log('loading middleware...');
-
     var bodyParser = require('body-parser');
 
     //maintain reference to self
     var self = this;
 
-    //incorporate body parser
+    //parse body for urlencoded form data
+    this.express.use(bodyParser.urlencoded());
+    console.log('bodyparser form data');
+
+
+    //parse body for json
     this.express.use(bodyParser.json());
 
     //detect body parsing error
@@ -139,6 +135,8 @@ module.exports = Class.extend({
 
   //load additional middleware
   _loadMiddleware: function() {
+
+    console.log('loading middleware...');
 
     this._initCORS();
     this._initBodyParser();
