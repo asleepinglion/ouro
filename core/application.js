@@ -80,25 +80,26 @@ module.exports = Class.extend({
     if( fs.existsSync(this.appPath+'/package.json') ) {
       this.config.package = require(this.appPath + '/package.json');
     } else {
-      console.error('A package.json is required, but missing from your application...');
+      console.error('A package.json is required ('+this.appPath + '/package.json'+')');
       process.exit();
     }
 
     //attempt to load data configuration
-    if( fs.existsSync(this.appPath+'/config/data') ) {
+    if( fs.existsSync(this.appPath+'/config/data.js') ) {
       this.config.data = require(this.appPath+'/config/data');
     } else {
-      console.error('The data.json configuration is required, but missing from your application...');
+      console.error('The data.json configuration is required ('+this.appPath+'/config/data'+')');
       process.exit();
     }
 
     //attempt to load security configuration
-    if( fs.existsSync(this.appPath+'/config/security') ) {
+    if( fs.existsSync(this.appPath+'/config/security.js') ) {
       this.config.security = require(this.appPath+'/config/security');
     } else {
-      console.error('The security.json configuration is required, but missing from your application...');
+      console.error('The security.json configuration is required ('+this.appPath+'/config/security'+')');
       process.exit();
     }
+
   },
 
   //init CORS (cross origin resource sharing)
