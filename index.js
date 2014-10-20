@@ -29,5 +29,3 @@
 module.exports.Class = require('./core/base.js');
 module.exports.Application = require('./core/application.js');
 module.exports.Controller = require('./core/controller.js');
-module.exports.CrudController = require('./core/crud.js');
-module.exports.ORM = require('waterline');

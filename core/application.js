@@ -63,9 +63,7 @@ module.exports = Class.extend({
 
     //server initialization
     this._loadMiddleware();
-    this._setupOrm();
-    this._loadModels();
-    this._initOrm();
+    this._initDBEngine();
     this._loadControllers();
     this._configureRouter();
 
@@ -157,95 +155,25 @@ module.exports = Class.extend({
 
   },
 
-  //initialize the waterline ORM
-  _setupOrm: function() {
+  _initDBEngine: function() {
 
-    var Waterline = require('waterline');
-
-    //maintain reference to waterline orm
-    this.orm = new Waterline();
-
-  },
-
-  //load models by going through module folders
-  _loadModels: function() {
-
-    console.log('loading models...');
-
-    //maintain reference to self
-    var self = this;
-
-    //maintain quick list of loaded models for console
-    var loadedModels = [];
-
-    //check if files are stored in modules or by type
-    if( fs.existsSync(self.appPath+'/modules') ) {
-
-      //get list of modules
-      var modules = fs.readdirSync(self.appPath+'/modules');
-
-      //load each controller
-      modules.map(function(moduleName) {
-
-        //make sure the controller exists
-        if( fs.existsSync(self.appPath+'/modules/'+moduleName+'/model.js') ) {
-
-          var Model = require(self.appPath+'/modules/'+moduleName+'/model');
-
-          if( Model ) {
-            self.orm.loadCollection(Model);
-            loadedModels.push(moduleName);
-          }
-        }
-
-      });
-
-    } else if( fs.existsSync(self.appPath+'/models') ) {
-
-      //get list of models
-      var models = fs.readdirSync(self.appPath+'/models');
-
-      //load each controller
-      models.map(function(modelName) {
-
-        modelName = modelName.split('.')[0];
-
-        var Model = require(self.appPath+'/models/'+modelName);
-
-        if( Model ) {
-          self.orm.loadCollection(Model);
-          loadedModels.push(modelName);
-        }
-
-      });
-
+    //make sure an engine has been specified
+    if( _.isEmpty(this.config.data.engine) ) {
+      console.error('You must specify an engine to use, e.g.: rethink, waterline etc.');
+      process.exit();
     }
 
-    console.log('models loaded:',loadedModels);
+    //make sure the node module is present
+    if( !fs.existsSync(this.appPath+'/node_modules/superjs-'+this.config.data.engine) ) {
+      console.error('The engine you specified was not found, make sure you have installed the package: npm install superjs-rethink');
+      process.exit();
+    }
 
-  },
+    //load the engine module
+    this.engine = require(this.appPath+'/node_modules/superjs-waterline');
 
-  _initOrm: function() {
-
-    //maintain reference to self
-    var self = this;
-
-    //initialize the orm
-    this.orm.initialize(this.config.data, function(err, models) {
-
-      //TODO: retry/manage app.ormReady state
-      if(err) {
-        console.log('ORM failed to initialize:');
-        console.log(err);
-
-      } else {
-        console.log('The ORM is Now Ready...');
-        self.models = models.collections;
-        self.connections = models.connections;
-
-        self._emit('ormReady', models.collections);
-      }
-    });
+    //initialize the engine
+    var initializer = new this.engine.Initializer(this);
 
   },
 
