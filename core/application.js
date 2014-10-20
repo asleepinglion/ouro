@@ -77,14 +77,28 @@ module.exports = Class.extend({
     this.config = {};
 
     //attempt to load the package json
-    this.config.package = require(this.appPath+'/package.json');
+    if( fs.existsSync(this.appPath+'/package.json') ) {
+      this.config.package = require(this.appPath + '/package.json');
+    } else {
+      console.error('A package.json is required, but missing from your application...');
+      process.exit();
+    }
 
     //attempt to load data configuration
-    this.config.data = require(this.appPath+'/config/data');
+    if( fs.existsSync(this.appPath+'/config/data') ) {
+      this.config.data = require(this.appPath+'/config/data');
+    } else {
+      console.error('The data.json configuration is required, but missing from your application...');
+      process.exit();
+    }
 
     //attempt to load security configuration
-    this.config.security = require(this.appPath+'/config/security');
-
+    if( fs.existsSync(this.appPath+'/config/security') ) {
+      this.config.security = require(this.appPath+'/config/security');
+    } else {
+      console.error('The security.json configuration is required, but missing from your application...');
+      process.exit();
+    }
   },
 
   //init CORS (cross origin resource sharing)
@@ -107,7 +121,6 @@ module.exports = Class.extend({
     //parse body for urlencoded form data
     this.express.use(bodyParser.urlencoded());
     console.log('bodyparser form data');
-
 
     //parse body for json
     this.express.use(bodyParser.json());
