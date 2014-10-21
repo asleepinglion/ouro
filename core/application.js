@@ -294,7 +294,14 @@ module.exports = Class.extend({
   _initResponse: function(req, res, next) {
 
     console.log('initializing response...');
+
+    //initialize response object
     this._setResponse({name: this.config.package.name, version: this.config.package.version}, res);
+
+    //set the request start time
+    req.startTime = new Date();
+
+    //proceed to next request process
     return next();
 
   },
@@ -494,6 +501,11 @@ module.exports = Class.extend({
 
   //send response
   _sendResponse: function(req, res) {
+
+    //calculate request time
+    var endTime = new Date();
+    var requestDuration = endTime - req.startTime;
+    res.response.duration = requestDuration + 'ms';
 
     //send response
     res.json(res.response);
