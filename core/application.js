@@ -505,7 +505,7 @@ module.exports = Class.extend({
   start: function() {
 
     //define port
-    var port = process.env.PORT || this.config.port || 8888;
+    var port = process.env.PORT || this.config.package.port || 8888;
     console.log('starting server on port:', port);
 
     //start listening on port
