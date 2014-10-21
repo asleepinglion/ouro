@@ -66,7 +66,6 @@ module.exports = Class.extend({
     this._initDBEngine();
     this._loadControllers();
     this._configureRouter();
-
   },
 
   //load configuration
@@ -170,7 +169,7 @@ module.exports = Class.extend({
     }
 
     //load the engine module
-    this.engine = require(this.appPath+'/node_modules/superjs-waterline');
+    this.engine = require(this.appPath+'/node_modules/superjs-'+this.config.data.engine);
 
     //initialize the engine
     var initializer = new this.engine.Initializer(this);
