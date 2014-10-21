@@ -118,7 +118,6 @@ module.exports = Class.extend({
 
     //parse body for urlencoded form data
     this.express.use(bodyParser.urlencoded());
-    console.log('bodyparser form data');
 
     //parse body for json
     this.express.use(bodyParser.json());
