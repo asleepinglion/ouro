@@ -3,6 +3,19 @@
 
 *Disclaimer: This framework is under development and breaking changes are likely to occur.*
 
+####Starter Applciation
+Try out SuperJS quickly with the Starter application: [https://github.com/asleepinglion/superjs-starter](https://github.com/asleepinglion/superjs-starter)
+
+- Clone the Starter Repository
+- Run `npm intall` to install required modules
+- Update the `config/data.js` settings to point to a real database
+- Create a real module in the `modules` folder which reflects an actual table
+- Run `node app.js`
+- GET `http://127.0.0.1:8888
+- GET `http://127.0.0.1:8888/describe
+- GET `http://127.0.0.1:8888/yourtable
+- POST `http://127.0.0.1:8888/yourtable
+
 ###Overview
 
 Super.JS is an API framework for Node.JS which provides a clean way to structure and extend an application using a [Simple Inheritance](http://ejohn.org/blog/simple-javascript-inheritance/) model that fully supports method overriding and calling parent methods via _super. 
@@ -17,7 +30,7 @@ Super.JS is an API framework for Node.JS which provides a clean way to structure
 
 - **Public Methods** A simple array on the controller lets you configure specific methods to bypass authentication and remain open to the public.
 
-- **Adapter-based ORM** Incorporates Sail.JS' Waterline ORM. Multiple connections can be configured for a variety of databases (MySQL, Mongo, etc).
+- **Database Independent** SuperJS allows you to integrate with any database backend by providing a simple interface for hooking into the request engine. Currently two ORMs have been implemented: [thinky ORM](https://github.com/asleepinglion/superjs-rethink) for rethinkDB and Sail.JS' [Waterline ORM](https://github.com/asleepinglion/superjs-waterline) which allows for multiple connections can be configured for a variety of databases (MySQL, Mongo, etc).
 
 - **CRUD Methods** An extended controller class provides CRUD methods out of the box, including an additional describe method which either describes available controllers (if directed towards the API root url) or model attributes (if directed towards a controller).
 
@@ -40,7 +53,7 @@ Super.JS is an API framework for Node.JS which provides a clean way to structure
 - Inline Documentation - Detailed inline markdown-based documentation and documentation generation build process.
 - Cluster Support - Automatic master & workers to take advantage of multiple processors and provide gracefull crashes using Node's Domain and Child Process mechanisms.
 - Rate & Blacklist Middleware - Incorporate middleware for rate limiting and blacklisting IPs.
-- Promises - Refactor request execution using promises instead of callbacks. (The ORM already uses promises.)
+- Promises - Refactor request execution using promises instead of callbacks. (The implemented ORMs already uses promises.)
 
 
 **Installation**
@@ -128,10 +141,10 @@ App.on('serverStarted', function() {
 App.startServer();
 
 ```
-**SuperJS Model**
+**SuperJS Waterline Model**
 
 ```
-var SuperJS = require('superjs');
+var SuperJS = require('superjs-waterline');
 
 //Waterline under the hood; i.e., SuperJS.ORM = require('waterline');
 module.exports = SuperJS.ORM.Collection.extend({
@@ -154,15 +167,34 @@ module.exports = SuperJS.ORM.Collection.extend({
 
 ```
 
-**SuperJS Controller**
+**SuperJS Rethink Model**
 
 ```
-var SuperJS = require('superjs');
+module.exports = {
+
+  name: 'address',
+  connection: 'default',
+  attributes: {
+
+	id: Number,
+    name: String,
+    address: String,
+    address2: String
+
+  }
+
+};
+```
+
+**SuperJS Rethink Controller**
+
+```
+var SuperJS = require('superjs-rethink');
 
 module.exports = SuperJS.Controller.extend({
 
-  name: 'myController',
-	
+  name: 'address',
+  
   _init: function(app) {
 
     //call bass class constructor
@@ -191,57 +223,8 @@ module.exports = SuperJS.Controller.extend({
 
 ```
 
-**SuperJS CrudController**
 
-```
-
-var SuperJS = require('superjs');
-
-var AddressControler = module.exports = SuperJS.CrudController.extend({
-
-  name: 'address',
-  public: ['search'],
-
-  _init: function(app) {
-
-    //call bass class constructor
-    this._super(app);
-
-    //bind events to trigger secondary procedures
-    this.on('beforeAction', function(req) {
-      //e.g. send event to request log
-      console.log('beforeAction event triggered:', req.action);
-    });
-
-    this.on('afterAction', function(req, response) {
-      //e.g. send event to request log
-      console.log('afterAction event triggered:', req.action);
-    });
-
-  },
-
-  testMethod: function(req, callback) {
-    callback({'test':true});
-  },
-
-  //example: override beforeAction method (attach user info)
-  //requires authentication strategy and user model
-  _beforeAction: function(req, callback) {
-
-    if( req.user ) {
-      var basicUserInfo = {id: req.user.id, fullName: req.user.firstName + ' ' + req.user.lastName};
-      var response = {user: basicUserInfo};
-      callback(response);
-    } else {
-      callback({});
-    }
-  }
-
-
-});
-```
-
-**Data (config/data.js)**
+**Data (config/data.js) - for Waterline **
 
 ```
 /*
@@ -280,6 +263,35 @@ module.exports = {
 };
 
 ```
+
+**Data (config/data.js) - for Rethink **
+
+```
+/*
+ * Database Configuration
+ *
+ * You can use the database configuration to setup connections to
+ * multiple data sources. 
+ */
+
+module.exports = {
+
+  //set the engine to use
+  engine: 'rethink',
+
+  connections: {
+
+    default: {
+      db: 'test',
+      host: '127.0.0.1',
+      port: 28015
+    }
+  }
+
+};
+
+```
+
 
 **Security (config/security.js)**
 
