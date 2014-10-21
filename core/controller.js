@@ -16,18 +16,6 @@ module.exports = Class.extend({
     //maintain reference to self
     var self = this;
 
-    this.app._on('ormReady', function(models) {
-
-      //store reference to models
-      self.models = app.models;
-
-      //associate model of the same name to this controller if it exists
-      var modelName = self.name.toLowerCase();
-      if( modelName in models )
-        self.model = models[modelName];
-
-    });
-
   },
 
   _beforeAction: function(req, callback) {
