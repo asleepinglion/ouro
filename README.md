@@ -4,45 +4,77 @@
 *Disclaimer: This framework is under development and breaking changes are likely to occur.*
 
 ####Starter Applciation
-Try out SuperJS quickly with the Starter application: [https://github.com/asleepinglion/superjs-starter](https://github.com/asleepinglion/superjs-starter)
+Try out SuperJS quickly with the Starter application: 
+[https://github.com/asleepinglion/superjs-starter](https://github.com/asleepinglion/superjs-starter)
 
 - Clone the Starter Repository
 - Run `npm intall` to install required modules
 - Update the `config/data.js` settings to point to a real database
 - Create a real module in the `modules` folder which reflects an actual table
 - Run `node app.js`
-- GET `http://127.0.0.1:8888
-- GET `http://127.0.0.1:8888/describe
-- GET `http://127.0.0.1:8888/yourtable
-- POST `http://127.0.0.1:8888/yourtable
+
+####Testing The API:
+
+By default security is disabled and all REST routes are publicly available. Content-type `application/json` is required
+on POST, PUT, and DELETE requests. All REST routes have RPC routes that match, for example a GET on a table is also 
+available at `http://127.0.0.1:8888/yourtable/search` and a POST is also available at 
+`http://127.0.0.1:8888/yourtable/create`. 
+
+- GET `http://127.0.0.1:8888` to check if the server is up.
+- GET `http://127.0.0.1:8888/describe` to describe available controllers and methods.
+- GET `http://127.0.0.1:8888/yourtable` to get the contents of `yourtable`
+- POST `http://127.0.0.1:8888/yourtable` to create a new `yourtable` record.
+- PUT `http://127.0.0.1:8888/yourtable` to update a yourtable` record
 
 ###Overview
 
-Super.JS is an API framework for Node.JS which provides a clean way to structure and extend an application using a [Simple Inheritance](http://ejohn.org/blog/simple-javascript-inheritance/) model that fully supports method overriding and calling parent methods via _super. 
+Super.JS is an API framework for Node.JS which provides a clean way to structure and extend an application using a 
+[Simple Inheritance](http://ejohn.org/blog/simple-javascript-inheritance/) model that fully supports method overriding 
+and calling parent methods via _super. 
 
-- **Simple Inheritance** Everything inherits from a simple base class which itself inherits from Node's native EventEmitter class.
+- **Simple Inheritance** Everything inherits from a simple base class which itself inherits from Node's native 
+EventEmitter class.
 
-- **Clean Folder Structure** Either store controllers and models grouped by resource (e.g. modules/address/controller.js, modules/address/model.js) or grouped by type (e.g. controllers/address.js, models/address.js).
+- **Clean Folder Structure** Either store controllers and models grouped by resource (e.g. 
+modules/address/controller.js, modules/address/model.js) or grouped by type (e.g. controllers/address.js, 
+models/address.js).
 
-- **Automatic Routing** Requests route to controller methods automatically. A simple underscore prefix allows some methods to remain internal and unexposed. 
+- **Automatic Routing** Requests route to controller methods automatically. A simple underscore prefix allows some 
+methods to remain internal and unexposed. 
 
-- **Authentication** Incorporates Custom Authentication Hooks allowing you to implement whatever authentication method works for you. The default provided example demonstrates a token based approach. 
+- **Authentication** Incorporates Custom Authentication Hooks allowing you to implement whatever authentication method 
+works for you. The default provided example demonstrates a token based approach. 
 
-- **Public Methods** A simple array on the controller lets you configure specific methods to bypass authentication and remain open to the public.
+- **Public Methods** A simple array on the controller lets you configure specific methods to bypass authentication and 
+remain open to the public.
 
 - **Database Independent** SuperJS allows you to integrate with any database backend by providing a simple interface for hooking into the request engine. Currently two ORMs have been implemented: [thinky ORM](https://github.com/asleepinglion/superjs-think) for thinky (a rethinkDB ORM) and Sail.JS' [Waterline ORM](https://github.com/asleepinglion/superjs-waterline) which allows for multiple connections can be configured for a variety of databases (MySQL, Mongo, etc).
+for hooking into the request engine. Currently two ORMs have been implemented: 
+[thinky ORM](https://github.com/asleepinglion/superjs-rethink) for rethinkDB and Sail.JS' 
+[Waterline ORM](https://github.com/asleepinglion/superjs-waterline) which allows for multiple connections can be 
+configured for a variety of databases (MySQL, Mongo, etc).
 
-- **CRUD Methods** An extended controller class provides CRUD methods out of the box, including an additional describe method which either describes available controllers (if directed towards the API root url) or model attributes (if directed towards a controller).
+- **CRUD Methods** An extended controller class provides CRUD methods out of the box, including an additional describe 
+method which either describes available controllers (if directed towards the API root url) or model attributes (if 
+directed towards a controller).
 
-- **REST & RPC** Rest methods (GET, POST, PUT, DELETE) are automatically wired, but their underlying methods (search, create, update, delete) are also available over GET and POST. Additional RPC methods can be created by simply creating a function on the controller.
+- **REST & RPC** Rest methods (GET, POST, PUT, DELETE) are automatically wired, but their underlying methods (search, 
+create, update, delete) are also available over GET and POST. Additional RPC methods can be created by simply creating 
+a function on the controller.
 
-- **Event Driven** Events are emitted on the application and controllers on server start and before and after executing actions (controller methods). This allows easy secondary asynchronous operations. For example, you could send a notification via pusher when a record of certain criteria is added to the database without delaying the response to the user/process who initiated the request.
+- **Event Driven** Events are emitted on the application and controllers on server start and before and after executing 
+actions (controller methods). This allows easy secondary asynchronous operations. For example, you could send a 
+notification via pusher when a record of certain criteria is added to the database without delaying the response to the 
+user/process who initiated the request.
 
-- **Easy Overrides** Full support for super methods provides the ability to override methods of a parent class and call the parent method from inside the extended method ( *this.super()* ).
+- **Easy Overrides** Full support for super methods provides the ability to override methods of a parent class and call 
+the parent method from inside the extended method ( *this.super()* ).
 
-- **Before/After Action Hooks** Easily modify the response object before or after the action requested is executed by overriding the controllers _beforeAction and _afterAction methods. 
+- **Before/After Action Hooks** Easily modify the response object before or after the action requested is executed by 
+overriding the controllers _beforeAction and _afterAction methods. 
 
-- **JSON Response** Automatic management of JSON response object. Simply modify the resposne object during the chain of execution and it is automatically passed back to the user at the end of the request.
+- **JSON Response** Automatic management of JSON response object. Simply modify the resposne object during the chain of 
+execution and it is automatically passed back to the user at the end of the request.
 
 **TODO**
 
