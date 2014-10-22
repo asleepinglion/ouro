@@ -30,7 +30,7 @@ Super.JS is an API framework for Node.JS which provides a clean way to structure
 
 - **Public Methods** A simple array on the controller lets you configure specific methods to bypass authentication and remain open to the public.
 
-- **Database Independent** SuperJS allows you to integrate with any database backend by providing a simple interface for hooking into the request engine. Currently two ORMs have been implemented: [thinky ORM](https://github.com/asleepinglion/superjs-rethink) for rethinkDB and Sail.JS' [Waterline ORM](https://github.com/asleepinglion/superjs-waterline) which allows for multiple connections can be configured for a variety of databases (MySQL, Mongo, etc).
+- **Database Independent** SuperJS allows you to integrate with any database backend by providing a simple interface for hooking into the request engine. Currently two ORMs have been implemented: [thinky ORM](https://github.com/asleepinglion/superjs-think) for thinky (a rethinkDB ORM) and Sail.JS' [Waterline ORM](https://github.com/asleepinglion/superjs-waterline) which allows for multiple connections can be configured for a variety of databases (MySQL, Mongo, etc).
 
 - **CRUD Methods** An extended controller class provides CRUD methods out of the box, including an additional describe method which either describes available controllers (if directed towards the API root url) or model attributes (if directed towards a controller).
 
@@ -167,7 +167,7 @@ module.exports = SuperJS.ORM.Collection.extend({
 
 ```
 
-**SuperJS Rethink Model**
+**SuperJS Thinky Model**
 
 ```
 module.exports = {
@@ -186,10 +186,10 @@ module.exports = {
 };
 ```
 
-**SuperJS Rethink Controller**
+**SuperJS Thinky Controller**
 
 ```
-var SuperJS = require('superjs-rethink');
+var SuperJS = require('superjs-thinky');
 
 module.exports = SuperJS.Controller.extend({
 
@@ -264,7 +264,7 @@ module.exports = {
 
 ```
 
-**Data (config/data.js) - for Rethink **
+**Data (config/data.js) - for Thinky **
 
 ```
 /*
@@ -277,7 +277,7 @@ module.exports = {
 module.exports = {
 
   //set the engine to use
-  engine: 'rethink',
+  engine: 'thinky',
 
   connections: {
 
