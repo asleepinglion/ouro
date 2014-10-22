@@ -24,8 +24,8 @@ module.exports = Class.extend({
 
 
     //console log emblem
-    console.log("  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs  ");
-    console.log(" d%%SP  .SS       SS.  .SS~YS%%b    d%%SP  .SS~YS%%b      .SS   d%%SP  ");
+    console.log("\n\n  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs  ");
+    console.log(" d%%%%SP  .SS       SS.  .SS~YS%%%%b    d%%%%SP  .SS~YS%%%%b      .SS   d%%%%SP  ");
     console.log("d%S'    S%S       S%S  S%S   `S%b  d%S'    S%S   `S%b     S%S  d%S'    ");
     console.log("S%|     S%S       S%S  S%S    S%S  S%S     S%S    S%S     S%S  S%|     ");
     console.log("S&S     S&S       S&S  S%S    d*S  S&S     S%S    d*S     S&S  S&S     ");
@@ -198,7 +198,8 @@ module.exports = Class.extend({
           var Controller = require(self.appPath + '/modules/' + moduleName + '/controller');
 
           if (Controller) {
-            self.controllers[moduleName] = new Controller(self);
+            var controller = new Controller(self);
+            self.controllers[controller.name] = controller;
           }
         }
 
@@ -217,7 +218,8 @@ module.exports = Class.extend({
         var Controller = require(self.appPath + '/controllers/' + controllerName);
 
         if (Controller) {
-          self.controllers[controllerName] = new Controller(self);
+          var controller = new Controller(self);
+          self.controllers[controller.name] = controller;
         }
 
       });
