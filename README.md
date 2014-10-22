@@ -48,9 +48,9 @@ works for you. The default provided example demonstrates a token based approach.
 - **Public Methods** A simple array on the controller lets you configure specific methods to bypass authentication and 
 remain open to the public.
 
-- **Database Independent** SuperJS allows you to integrate with any database backend by providing a simple interface for hooking into the request engine. Currently two ORMs have been implemented: [thinky ORM](https://github.com/asleepinglion/superjs-think) for thinky (a rethinkDB ORM) and Sail.JS' [Waterline ORM](https://github.com/asleepinglion/superjs-waterline) which allows for multiple connections can be configured for a variety of databases (MySQL, Mongo, etc).
+- **Database Independent** SuperJS allows you to integrate with any database backend by providing a simple interface 
 for hooking into the request engine. Currently two ORMs have been implemented: 
-[thinky ORM](https://github.com/asleepinglion/superjs-rethink) for rethinkDB and Sail.JS' 
+[thinky ORM](https://github.com/asleepinglion/superjs-think) for thinky (a rethinkDB ORM) and Sail.JS' 
 [Waterline ORM](https://github.com/asleepinglion/superjs-waterline) which allows for multiple connections can be 
 configured for a variety of databases (MySQL, Mongo, etc).
 
