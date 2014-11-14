@@ -75,7 +75,7 @@ module.exports = Class.extend({
   //init request logger for development
   _initLogger: function() {
 
-    var LogEngine = require('superjs-log');
+    var LogEngine = require('superjs-logger');
     this.log = new LogEngine();
 
   },
