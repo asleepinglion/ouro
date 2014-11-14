@@ -15,31 +15,37 @@ var express = require('express'),
   path = require('path'),
   domain = require('domain'),
   _ = require('underscore'),
-  Promise = require('bluebird');
+  Promise = require('bluebird'),
+  colors = require('colors/safe');
 
 module.exports = Class.extend({
 
   //initialize the application
   _init: function() {
 
-
     //console log emblem
-    console.log("\n\n  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs  ");
-    console.log(" d%%%%SP  .SS       SS.  .SS~YS%%%%b    d%%%%SP  .SS~YS%%%%b      .SS   d%%%%SP  ");
-    console.log("d%S'    S%S       S%S  S%S   `S%b  d%S'    S%S   `S%b     S%S  d%S'    ");
-    console.log("S%|     S%S       S%S  S%S    S%S  S%S     S%S    S%S     S%S  S%|     ");
-    console.log("S&S     S&S       S&S  S%S    d*S  S&S     S%S    d*S     S&S  S&S     ");
-    console.log("Y&Ss    S&S       S&S  S&S   .S*S  S&S_Ss  S&S   .S*S     S&S  Y&Ss    ");
-    console.log("`S&&S   S&S       S&S  S&S_sdSSS   S&S~SP  S&S_sdSSS      S&S  `S&&S   ");
-    console.log("  `S*S  S&S       S&S  S&S~YSSY    S&S     S&S~YSY%b      S&S    `S*S  ");
-    console.log("   l*S  S*b       d*S  S*S         S*b     S*S   `S%b     d*S     l*S  ");
-    console.log("  .S*P  S*S.     .S*S  S*S         S*S.    S*S    S%S    .S*S    .S*P  ");
-    console.log("sSS*S    SSSbs_sdSSS   S*S          SSSbs  S*S    S&S  sdSSS   sSS*S   ");
-    console.log("YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS  YSSY    YSS'    ");
-    console.log("                       SP                  SP                          ");
-    console.log("                       Y                   Y                           \n");
+    console.log(colors.cyan("\n\n  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs  "));
+    console.log(colors.cyan(" d%%%%SP  .SS       SS.  .SS~YS%%%%b    d%%%%SP  .SS~YS%%%%b      .SS   d%%%%SP  "));
+    console.log(colors.cyan("d%S'    S%S       S%S  S%S   `S%b  d%S'    S%S   `S%b     S%S  d%S'    "));
+    console.log(colors.cyan("S%|     S%S       S%S  S%S    S%S  S%S     S%S    S%S     S%S  S%|     "));
+    console.log(colors.cyan("S&S     S&S       S&S  S%S    d*S  S&S     S%S    d*S     S&S  S&S     "));
+    console.log(colors.cyan("Y&Ss    S&S       S&S  S&S   .S*S  S&S_Ss  S&S   .S*S     S&S  Y&Ss    "));
+    console.log(colors.red("`S&&S   S&S       S&S  S&S_sdSSS   S&S~SP  S&S_sdSSS      S&S  `S&&S   "));
+    console.log(colors.red("  `S*S  S&S       S&S  S&S~YSSY    S&S     S&S~YSY%b      S&S    `S*S  "));
+    console.log(colors.red("   l*S  S*b       d*S  S*S         S*b     S*S   `S%b     d*S     l*S  "));
+    console.log(colors.red("  .S*P  S*S.     .S*S  S*S         S*S.    S*S    S%S    .S*S    .S*P  "));
+    console.log(colors.red("sSS*S    SSSbs_sdSSS   S*S          SSSbs  S*S    S&S  sdSSS   sSS*S   "));
+    console.log(colors.red("YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS  YSSY    YSS'    "));
+    console.log(colors.red("                       SP                  SP                          "));
+    console.log(colors.red("                       Y                   Y                           \n"));
 
-    console.log('SuperJS Version: '+require('../package.json').version);
+
+    //initialize logger
+    this._initLogger();
+
+    //state version
+    this.log.notify('SuperJS Version: '+require('../package.json').version);
+    this.log.info('server initializing...');
 
     //set application path
     this.appPath = path.dirname(process.mainModule.filename);
@@ -59,13 +65,19 @@ module.exports = Class.extend({
     //maintain list of loaded controllers
     this.controllers = [];
 
-    console.log('server initializing...');
-
     //server initialization
     this._loadMiddleware();
     this._initDBEngine();
     this._loadControllers();
     this._configureRouter();
+  },
+
+  //init request logger for development
+  _initLogger: function() {
+
+    var LogEngine = require('superjs-log');
+    this.log = new LogEngine();
+
   },
 
   //load configuration
@@ -81,11 +93,19 @@ module.exports = Class.extend({
       process.exit();
     }
 
+    //attempt to load server configuration
+    if( fs.existsSync(this.appPath+'/config/server.js') ) {
+      this.config.server = require(this.appPath+'/config/server');
+    } else {
+      console.error('The server.js configuration is required ('+this.appPath+'/config/server.js)');
+      process.exit();
+    }
+
     //attempt to load data configuration
     if( fs.existsSync(this.appPath+'/config/data.js') ) {
       this.config.data = require(this.appPath+'/config/data');
     } else {
-      console.error('The data.json configuration is required ('+this.appPath+'/config/data'+')');
+      console.error('The data.js configuration is required ('+this.appPath+'/config/data.js)');
       process.exit();
     }
 
@@ -93,8 +113,13 @@ module.exports = Class.extend({
     if( fs.existsSync(this.appPath+'/config/security.js') ) {
       this.config.security = require(this.appPath+'/config/security');
     } else {
-      console.error('The security.json configuration is required ('+this.appPath+'/config/security'+')');
+      console.error('The security.js configuration is required ('+this.appPath+'/config/security.js)');
       process.exit();
+    }
+
+    //warn about authentication being disabled
+    if( !this.config.security.enabled ) {
+      this.log.warn('authentication disabled - see the security configuration file.');
     }
 
   },
@@ -132,24 +157,13 @@ module.exports = Class.extend({
 
   },
 
-  //init request logger for development
-  _initLogger: function() {
-
-    //log all requests to console for development
-    var morgan = require('morgan');
-    this.express.use(morgan('dev'));
-
-  },
-
-
   //load additional middleware
   _loadMiddleware: function() {
 
-    console.log('loading middleware...');
+    this.log.info('loading middleware...');
 
     this._initCORS();
     this._initBodyParser();
-    this._initLogger();
 
   },
 
@@ -178,7 +192,7 @@ module.exports = Class.extend({
   //load controllers by going through module folders
   _loadControllers: function() {
 
-    console.log('loading controllers...');
+    this.log.info('loading controllers...');
 
     //maintain reference to self
     var self = this;
@@ -226,14 +240,14 @@ module.exports = Class.extend({
 
     }
 
-    console.log('controllers loaded:',Object.keys(this.controllers));
+    this.log.info('controllers loaded:',Object.keys(this.controllers));
 
   },
 
   //configure the router
   _configureRouter: function() {
 
-    console.log('configuring router...');
+    this.log.info('configuring router...');
 
     //maintain reference to self
     var self = this;
@@ -291,10 +305,19 @@ module.exports = Class.extend({
 
   },
 
+  //override this to manipulate the request
+  _beforeAction: function(req, res) {
+    return;
+  },
+
   //initialize the response object
   _initResponse: function(req, res, next) {
 
-    console.log('initializing response...');
+    //trigger before action hook
+    this._beforeAction(req, res);
+
+    //log access
+    this.log.access(req.method+' '+req.path+' '+req.ip, req.body);
 
     //initialize response object
     this._setResponse({name: this.config.package.name, version: this.config.package.version}, res);
@@ -309,8 +332,6 @@ module.exports = Class.extend({
 
   //process request for REST & RPC methods
   _processRequest: function(req, res, next) {
-
-    console.log('processing request...');
 
     var path = req.path.split('/');
 
@@ -380,6 +401,8 @@ module.exports = Class.extend({
         return this._sendResponse(req,res);
       }
 
+      this.log.info('routing request:',{controller: req.controller, action: req.action});
+
       return next();
 
     }
@@ -391,31 +414,29 @@ module.exports = Class.extend({
   //check authentication
   _authenticateRequest: function(req, res, next) {
 
-    console.log('authenticating request...');
-
     //maintain reference to self
     var self = this;
 
     //check if authentication is enabled
     if( !this.config.security.enabled ) {
-      console.log('authentication disabled...');
       return next();
     }
 
     //check if the requested action is public
     if( this.controllers[req.controller].public && _.contains(this.controllers[req.controller].public, req.action) ) {
 
-      console.log('requested method is public, skipping auth...');
       return next();
 
     } else {
+
+      this.log.info('authenticating request...');
 
       //determine controller name for auth
       var controllerName = ( this.config.security.controllerName ) ? this.config.security.controllerName : 'user';
 
       //make sure the _authorize method has been implemented on the auth controller
       if( !this.controllers[controllerName] || !this.controllers[controllerName]._authorize ) {
-        console.log("The "+controllerName+" controller's _authorize method has not been implemented.");
+        this.log.error("The "+controllerName+" controller's _authorize method has not been implemented.");
         this._setResponse({success: false, message: "The "+controllerName+" controller's _authorize method has not been implemented."}, res);
         return this._sendResponse(req,res);
       }
@@ -432,7 +453,6 @@ module.exports = Class.extend({
         } else {
 
           //otherwise continue to process request
-          console.log('request authenticated!');
           return next();
         }
 
@@ -458,8 +478,6 @@ module.exports = Class.extend({
 
       //update response
       self._setResponse(response, res);
-
-      console.log('executing controller action:', req.controller+'->'+req.action);
 
       //call controller action
       self.controllers[req.controller][req.action](req, function(response) {
@@ -500,6 +518,11 @@ module.exports = Class.extend({
 
   },
 
+  //override this to manipulate the request
+  _afterAction: function(req, res) {
+    return;
+  },
+
   //send response
   _sendResponse: function(req, res) {
 
@@ -507,6 +530,12 @@ module.exports = Class.extend({
     var endTime = new Date();
     var requestDuration = endTime - req.startTime;
     res.response.duration = requestDuration + 'ms';
+
+    this.log.info('request duration:',{duration: requestDuration, unit:'ms'});
+    this.log.break();
+
+    //trigger after action hook
+    this._afterAction(req,res);
 
     //send response
     res.json(res.response);
@@ -517,8 +546,9 @@ module.exports = Class.extend({
   start: function() {
 
     //define port
-    var port = process.env.PORT || this.config.package.port || 8888;
-    console.log('starting server on port:', port);
+    var port = process.env.PORT || this.config.server.port || this.config.package.port || 8888;
+    this.log.info('starting server on port:', port);
+    this.log.break();
 
     //start listening on port
     this.express.listen(port);
