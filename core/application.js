@@ -83,6 +83,7 @@ module.exports = Class.extend({
   //load configuration
   _loadConfiguration: function() {
 
+    //setup configuration object
     this.config = {};
 
     //attempt to load the package json
@@ -93,27 +94,37 @@ module.exports = Class.extend({
       process.exit();
     }
 
+    //set default configuration path
+    this.configPath = '/config';
+
+    //detect environment path
+    if( fs.existsSync(this.appPath+this.configPath+'/environment.js') ) {
+      this.configPath = require(this.appPath+this.configPath+'/environment')();
+    }
+
+    this.log.info('using configuration path:', this.appPath+this.configPath);
+
     //attempt to load server configuration
-    if( fs.existsSync(this.appPath+'/config/server.js') ) {
-      this.config.server = require(this.appPath+'/config/server');
+    if( fs.existsSync(this.appPath+this.configPath+'/server.js') ) {
+      this.config.server = require(this.appPath+this.configPath+'/server');
     } else {
-      console.error('The server.js configuration is required ('+this.appPath+'/config/server.js)');
+      console.error('The server.js configuration is required ('+this.appPath+this.configPath+'/server.js)');
       process.exit();
     }
 
     //attempt to load data configuration
-    if( fs.existsSync(this.appPath+'/config/data.js') ) {
-      this.config.data = require(this.appPath+'/config/data');
+    if( fs.existsSync(this.appPath+this.configPath+'/data.js') ) {
+      this.config.data = require(this.appPath+this.configPath+'/data');
     } else {
-      console.error('The data.js configuration is required ('+this.appPath+'/config/data.js)');
+      console.error('The data.js configuration is required ('+this.appPath+this.configPath+'/data.js)');
       process.exit();
     }
 
     //attempt to load security configuration
-    if( fs.existsSync(this.appPath+'/config/security.js') ) {
-      this.config.security = require(this.appPath+'/config/security');
+    if( fs.existsSync(this.appPath+this.configPath+'/security.js') ) {
+      this.config.security = require(this.appPath+this.configPath+'/security');
     } else {
-      console.error('The security.js configuration is required ('+this.appPath+'/config/security.js)');
+      console.error('The security.js configuration is required ('+this.appPath+this.configPath+'/security.js)');
       process.exit();
     }
 
