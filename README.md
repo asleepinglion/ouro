@@ -1,11 +1,30 @@
-#SuperJS 
-**Super Extendable JSON API Framework for Node.JS**
+
+
+  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs
+ d%%SP  .SS       SS.  .SS~YS%%b    d%%SP  .SS~YS%%b      .SS   d%%SP
+d%S'    S%S       S%S  S%S   `S%b  d%S'    S%S   `S%b     S%S  d%S'
+S%|     S%S       S%S  S%S    S%S  S%S     S%S    S%S     S%S  S%|
+S&S     S&S       S&S  S%S    d*S  S&S     S%S    d*S     S&S  S&S
+Y&Ss    S&S       S&S  S&S   .S*S  S&S_Ss  S&S   .S*S     S&S  Y&Ss
+`S&&S   S&S       S&S  S&S_sdSSS   S&S~SP  S&S_sdSSS      S&S  `S&&S
+  `S*S  S&S       S&S  S&S~YSSY    S&S     S&S~YSY%b      S&S    `S*S
+   l*S  S*b       d*S  S*S         S*b     S*S   `S%b     d*S     l*S
+  .S*P  S*S.     .S*S  S*S         S*S.    S*S    S%S    .S*S    .S*P
+sSS*S    SSSbs_sdSSS   S*S          SSSbs  S*S    S&S  sdSSS   sSS*S
+YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS  YSSY    YSS'
+                       SP                  SP
+                       Y                   Y
 
 *Disclaimer: This framework is under development and breaking changes are likely to occur.*
 
-`SuperJS` is a database-independent, event-driven request engine that uses polymorphic classes to enable the rapid development of application programming interfaces. By abstracting from common base classes with methods that can be modified or overridden, the entire system becomes configurable. Layers can be combined together to develop more productively with less duplication of code and greater organization.
+`SuperJS` is a database-independent, event-driven request engine that uses polymorphic classes to enable the rapid
+development of APIs. By abstracting from common base classes with methods that can be modified or overridden, the
+entire system becomes configurable. Layers can be combined together to develop more productively with less duplication
+of code and greater organization.
 
-`SuperJS` was built with client side Javascript in mind and although I'm sure it can be used to do more, the primary purpose is to provide a central JSON backend for rich client side applications. It's designed to scale and enable production-ready applications.
+`SuperJS` was built with client side Javascript in mind and although I'm sure it can be used to do more, the primary
+purpose is to provide a central JSON backend for rich client side applications and frameworks such as Ember.
+It's designed to scale and enable production-ready applications.
 
 
 ####Starter Application
@@ -48,20 +67,19 @@ models/address.js).
 methods to remain internal and unexposed. 
 
 - **Authentication** Incorporates Custom Authentication Hooks allowing you to implement whatever authentication method 
-works for you. The default provided example demonstrates a token based approach. 
+works for you. The default provided example in the Starter kit demonstrates a token based approach.
 
-- **Public Methods** A simple array on the controller lets you configure specific methods to bypass authentication and 
+- **Public Methods** An array on the controller lets you configure specific methods to bypass authentication and
 remain open to the public.
 
-- **Database Independent** SuperJS allows you to integrate with any database backend by providing a simple interface 
-for hooking into the request engine. Currently two ORMs have been implemented: 
+- **Database Independent** SuperJS allows you to integrate with any database backend by providing a lightweight
+interface for hooking into the request engine. Currently two ORMs have been implemented:
 [thinky ORM](https://github.com/asleepinglion/superjs-think) for thinky, a rethinkDB ORM, and Sail.JS' 
 [Waterline ORM](https://github.com/asleepinglion/superjs-waterline) which allows for multiple connections can be 
 configured for a variety of databases (MySQL, Mongo, etc).
 
-- **CRUD Methods** An extended controller class provides CRUD methods out of the box, including an additional describe 
-method which either describes available controllers (if directed towards the API root url) or model attributes (if 
-directed towards a controller).
+- **CRUD Methods** Extended controller classes for each database engine provide CRUD methods out of the box, including
+an additional describe method which describes available controllers and methods.
 
 - **REST & RPC** Rest methods (GET, POST, PUT, DELETE) are automatically wired, but their underlying methods (search, 
 create, update, delete) are also available over GET and POST. Additional RPC methods can be created by simply creating 
@@ -76,9 +94,9 @@ user/process who initiated the request.
 the parent method from inside the extended method ( *this.super()* ).
 
 - **Before/After Action Hooks** Easily modify the response object before or after the action requested is executed by 
-overriding the controllers _beforeAction and _afterAction methods. 
+overriding the controller's or application's _beforeAction and _afterAction methods.
 
-- **JSON Response** Automatic management of JSON response object. Simply modify the resposne object during the chain of 
+- **JSON Response** Automatic management of JSON response object. Simply modify the response object during the chain of
 execution and it is automatically passed back to the user at the end of the request.
 
 **TODO**
@@ -87,10 +105,10 @@ execution and it is automatically passed back to the user at the end of the requ
 - Build Process - Using GRUNT or another build system, such as Gulp or Broccoli.
 - CLI/Scaffolding - CLI tool to generate applications, controllers, and models as well as configure the application.
 - Unit Tests - Yeah I know...
-- Inline Documentation - Detailed inline markdown-based documentation and documentation generation build process.
-- Cluster Support - Automatic master & workers to take advantage of multiple processors and provide gracefull crashes using Node's Domain and Child Process mechanisms.
+- Inline Documentation - Detailed inline markdown-based documentation and documentation generation in build process.
+- Cluster Support - Automatic master & workers to take advantage of multiple processors and provid graceful crashes using Node's Domain and Child Process mechanisms.
 - Rate & Blacklist Middleware - Incorporate middleware for rate limiting and blacklisting IPs.
-- Promises - Refactor request execution using promises instead of callbacks. (The implemented ORMs already uses promises.)
+- Promises - Refactor request execution using promises instead of callbacks. (The implemented ORMs already use promises.)
 
 ## Databases
 
