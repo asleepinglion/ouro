@@ -501,7 +501,7 @@ module.exports = Class.extend({
   //handle request
   handleRequest: function(req, res, next) {
 
-    //TODO: rewrite execution using promises
+    //TODO: rewrite execution using promises?
 
     //maintain reference to self
     var self = this;

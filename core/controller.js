@@ -18,17 +18,17 @@ module.exports = Class.extend({
 
   },
 
-  beforeAction: function(req, callback) {
+  beforeAction: function(req, next) {
 
     //can be overridden by the controller extension to manipulate the request or response
-    callback({});
+    next({});
 
   },
 
-  afterAction: function(req, response, callback) {
+  afterAction: function(req, response, next) {
 
     //can be overridden by the controller extension to manipulate the request or response
-    callback({});
+    next({});
   }
 
 });
