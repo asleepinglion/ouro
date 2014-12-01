@@ -12,8 +12,8 @@
 
 var EventEmitter = require('events').EventEmitter;
 
-var initializing = false,
-  fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
+var initializing = false;
+var fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
 var Class = function(){};
 
 // Create a new Class that inherits from this class
@@ -55,8 +55,8 @@ Class.extend = function(prop) {
   // The dummy class constructor
   function Class() {
     // All construction is actually done in the init method
-    if ( !initializing && this._init )
-      this._init.apply(this, arguments);
+    if ( !initializing && this.init )
+      this.init.apply(this, arguments);
   }
 
   // Populate our constructed prototype object
@@ -68,20 +68,9 @@ Class.extend = function(prop) {
   return Class;
 };
 
-//Create new class for SuperJS EventEmitter
-var SuperEventEmitter = function() {};
-
-//Internalize Event Emitter methods
-for( var prop in EventEmitter.prototype ) {
-  if( typeof EventEmitter.prototype[prop] === 'function')
-    SuperEventEmitter.prototype['_'+prop] = EventEmitter.prototype[prop];
-  else
-    SuperEventEmitter.prototype[prop] = EventEmitter.prototype[prop];
-}
-
 //Add class extension
-SuperEventEmitter.extend = Class.extend;
+EventEmitter.extend = Class.extend;
 
 //export base class
-module.exports = SuperEventEmitter;
+module.exports = EventEmitter;
 

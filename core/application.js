@@ -21,7 +21,7 @@ var express = require('express'),
 module.exports = Class.extend({
 
   //initialize the application
-  _init: function() {
+  init: function() {
 
     //console log emblem
     console.log(colors.cyan("\n\n  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs  "));
@@ -41,7 +41,7 @@ module.exports = Class.extend({
 
 
     //initialize logger
-    this._initLogger();
+    this.initLogger();
 
     //state version
     this.log.notify('SuperJS Version: '+require('../package.json').version);
@@ -51,37 +51,42 @@ module.exports = Class.extend({
     this.appPath = path.dirname(process.mainModule.filename);
 
     //load configuration
-    this._loadConfiguration();
+    this.loadConfiguration();
 
     //instantiate express application
     this.express = express();
 
     //maintain list of database connections
-    this.connections = [];
+    this.connections = {};
 
     //maintain list of models
-    this.models = [];
+    this.models = {};
 
     //maintain list of loaded controllers
-    this.controllers = [];
+    this.controllers = {};
+
+    //maintain list of available external methods
+    this.externalMethods = {};
 
     //server initialization
-    this._loadMiddleware();
-    this._initDBEngine();
-    this._loadControllers();
-    this._configureRouter();
+    this.loadMiddleware();
+    this.initDBEngine();
+    this.loadControllers();
+    this.buildMethodMap();
+    this.configureRouter();
   },
 
   //init request logger for development
-  _initLogger: function() {
+  initLogger: function() {
+
+    console.log('initializing the logger....');
 
     var LogEngine = require('superjs-logger');
-    this.log = new LogEngine();
-
+    this.log = new LogEngine(this);
   },
 
   //load configuration
-  _loadConfiguration: function() {
+  loadConfiguration: function() {
 
     //setup configuration object
     this.config = {};
@@ -136,16 +141,15 @@ module.exports = Class.extend({
   },
 
   //init CORS (cross origin resource sharing)
-  _initCORS: function() {
+  initCORS: function() {
 
     var cors = require('cors');
-
     this.express.use(cors());
 
   },
 
   //load body parser
-  _initBodyParser: function() {
+  initBodyParser: function() {
 
     var bodyParser = require('body-parser');
 
@@ -169,16 +173,16 @@ module.exports = Class.extend({
   },
 
   //load additional middleware
-  _loadMiddleware: function() {
+  loadMiddleware: function() {
 
     this.log.info('loading middleware...');
 
-    this._initCORS();
-    this._initBodyParser();
+    this.initCORS();
+    this.initBodyParser();
 
   },
 
-  _initDBEngine: function() {
+  initDBEngine: function() {
 
     //make sure an engine has been specified
     if( _.isEmpty(this.config.data.engine) ) {
@@ -201,7 +205,7 @@ module.exports = Class.extend({
   },
 
   //load controllers by going through module folders
-  _loadControllers: function() {
+  loadControllers: function() {
 
     this.log.info('loading controllers...');
 
@@ -225,6 +229,7 @@ module.exports = Class.extend({
           if (Controller) {
             var controller = new Controller(self);
             self.controllers[controller.name] = controller;
+            self.externalMethods[controller.name] = {};
           }
         }
 
@@ -238,6 +243,7 @@ module.exports = Class.extend({
       //load each controller
       controllers.map(function(controllerName) {
 
+        //split the filename
         controllerName = controllerName.split('.')[0];
 
         var Controller = require(self.appPath + '/controllers/' + controllerName);
@@ -245,6 +251,7 @@ module.exports = Class.extend({
         if (Controller) {
           var controller = new Controller(self);
           self.controllers[controller.name] = controller;
+          self.externalMethods[controller.name] = {};
         }
 
       });
@@ -255,8 +262,42 @@ module.exports = Class.extend({
 
   },
 
+  //build controller method maps
+  buildMethodMap: function() {
+
+    var firstCharacter = '';
+
+    //loop through controllers
+    for( var controllerName in this.controllers ) {
+
+      //loop through methods
+      for( var method in this.controllers[controllerName] ) {
+
+        //we only want functions
+        if( typeof this.controllers[controllerName][method] === 'function' ) {
+
+          //capture the first character of the method name
+          firstCharacter = method.substr(0,1);
+
+          //underscores or capital letters signify external methods
+          if(firstCharacter == '_') {
+
+            this.externalMethods[controllerName][method.substr(1,method.length-1)] = method;
+
+          } else if(firstCharacter === firstCharacter.toUpperCase() && firstCharacter !== firstCharacter.toLowerCase() ) {
+
+            this.externalMethods[controllerName][firstCharacter.toLowerCase()+method.substr(1,method.length-1)] = method;
+
+          }
+
+        }
+      }
+
+    }
+  },
+
   //configure the router
-  _configureRouter: function() {
+  configureRouter: function() {
 
     this.log.info('configuring router...');
 
@@ -265,73 +306,60 @@ module.exports = Class.extend({
 
     //setup default route
     this.express.get('/', function(req, res) {
-      self._defaultResponse(req, res);
+      self.defaultResponse(req, res);
     });
 
     //setup describe route
     this.express.get('/describe', function(req, res) {
-      self._describeResponse(req, res);
+      self.describeResponse(req, res);
     });
 
     //setup request & response chain
     this.express.all('*',
-      function(req, res, next) { self._initResponse(req, res, next) },
-      function(req, res, next) { self._processRequest(req, res, next) },
-      function(req, res, next) { self._authenticateRequest(req, res, next) },
-      function(req, res, next) { self._handleRequest(req, res, next) }
+      function(req, res, next) { self.initResponse(req, res, next) },
+      function(req, res, next) { self.processRequest(req, res, next) },
+      function(req, res, next) { self.authenticateRequest(req, res, next) },
+      function(req, res, next) { self.handleRequest(req, res, next) }
     );
 
   },
 
   //send default response
-  _defaultResponse: function(req, res) {
+  defaultResponse: function(req, res) {
 
     res.json({name: this.config.package.name, version: this.config.package.version, success: true});
 
   },
 
   //send default response
-  _describeResponse: function(req, res) {
+  describeResponse: function(req, res) {
 
     //init response object
-    var response = {name: this.config.package.name, version: this.config.package.version, success: true, controllers: {}};
+    var response = {name: this.config.package.name, version: this.config.package.version, success: true};
 
-    //loop through controllers
-    for( var controllerName in this.controllers ) {
-
-      response.controllers[controllerName] = [];
-
-      //loop through methods
-      for( var method in this.controllers[controllerName] ) {
-
-        //don't expose internal methods
-        if( typeof this.controllers[controllerName][method] === 'function' && method.substr(0,1) !== '_' ) {
-          response.controllers[controllerName].push(method);
-        }
-      }
-
-    }
+    //add external method map to the response
+    response.controllers = this.externalMethods;
 
     res.json(response);
 
   },
 
   //override this to manipulate the request
-  _beforeAction: function(req, res) {
+  beforeAction: function(req, res) {
     return;
   },
 
   //initialize the response object
-  _initResponse: function(req, res, next) {
+  initResponse: function(req, res, next) {
 
     //trigger before action hook
-    this._beforeAction(req, res);
+    this.beforeAction(req, res);
 
     //log access
     this.log.access(req.method+' '+req.path+' '+req.ip, req.body);
 
     //initialize response object
-    this._setResponse({name: this.config.package.name, version: this.config.package.version}, res);
+    this.setResponse({name: this.config.package.name, version: this.config.package.version}, res);
 
     //set the request start time
     req.startTime = new Date();
@@ -342,7 +370,7 @@ module.exports = Class.extend({
   },
 
   //process request for REST & RPC methods
-  _processRequest: function(req, res, next) {
+  processRequest: function(req, res, next) {
 
     var path = req.path.split('/');
 
@@ -386,30 +414,27 @@ module.exports = Class.extend({
           //set the controller name
           req.controller = path[1];
 
-          //do not allow access to internal methods
-          if( path[2].substring(0,1) !== '_' ) {
+          //check if action exists on controller
+          if( path[2] in this.externalMethods[path[1]]) {
 
-            //check if action exists on controller
-            if( path[2] in this.controllers[path[1]]) {
-
-              //set the action name
-              req.action = path[2];
-            }
+            //set the action name
+            req.action = path[2];
           }
+
         }
       }
 
       if( !req.controller ) {
-        this._setResponse({success: false, message: 'Controller not found.'}, res);
-        return this._sendResponse(req,res);
+        this.setResponse({success: false, message: 'Controller not found.'}, res);
+        return this.sendResponse(req,res);
       }
 
       if( !req.action ) {
         if( req.actionType === 'REST' )
-          this._setResponse({success: false, message: 'REST Controller method '+req.method+' invalid.'}, res);
+          this.setResponse({success: false, message: 'REST Controller method '+req.method+' invalid.'}, res);
         else
-          this._setResponse({success: false, message: 'Controller RPC method not found.'}, res);
-        return this._sendResponse(req,res);
+          this.setResponse({success: false, message: 'Controller RPC method not found.'}, res);
+        return this.sendResponse(req,res);
       }
 
       this.log.info('routing request:',{controller: req.controller, action: req.action});
@@ -418,12 +443,12 @@ module.exports = Class.extend({
 
     }
 
-    return this._sendResponse(req,res);
+    return this.sendResponse(req,res);
 
   },
 
   //check authentication
-  _authenticateRequest: function(req, res, next) {
+  authenticateRequest: function(req, res, next) {
 
     //maintain reference to self
     var self = this;
@@ -446,20 +471,20 @@ module.exports = Class.extend({
       var controllerName = ( this.config.security.controllerName ) ? this.config.security.controllerName : 'user';
 
       //make sure the _authorize method has been implemented on the auth controller
-      if( !this.controllers[controllerName] || !this.controllers[controllerName]._authorize ) {
-        this.log.error("The "+controllerName+" controller's _authorize method has not been implemented.");
-        this._setResponse({success: false, message: "The "+controllerName+" controller's _authorize method has not been implemented."}, res);
-        return this._sendResponse(req,res);
+      if( !this.controllers[controllerName] || !this.controllers[controllerName].authorize ) {
+        this.log.error("The "+controllerName+" controller's authorize method has not been implemented.");
+        this.setResponse({success: false, message: "The "+controllerName+" controller's _authorize method has not been implemented."}, res);
+        return this.sendResponse(req,res);
       }
 
       //execute authorize method on the auth controller
-      this.controllers[controllerName]._authorize(req, function(err, user) {
+      this.controllers[controllerName].authorize(req, function(err, user) {
 
         if( err || !user) {
 
           //if there was an error or the user was not found return failure
-          self._setResponse({success: false, message: "Authentication failed.", error: err}, res);
-          return self._sendResponse(req,res);
+          self.setResponse({success: false, message: "Authentication failed.", error: err}, res);
+          return self.sendResponse(req,res);
 
         } else {
 
@@ -474,7 +499,7 @@ module.exports = Class.extend({
   },
 
   //handle request
-  _handleRequest: function(req, res, next) {
+  handleRequest: function(req, res, next) {
 
     //TODO: rewrite execution using promises
 
@@ -482,30 +507,30 @@ module.exports = Class.extend({
     var self = this;
 
     //emit beforeAction event for secondary procedures
-    this.controllers[req.controller]._emit('beforeAction', req);
+    this.controllers[req.controller].emit('beforeAction', req);
 
     //call before action method
-    this.controllers[req.controller]._beforeAction(req, function(response) {
+    this.controllers[req.controller].beforeAction(req, function(response) {
 
       //update response
-      self._setResponse(response, res);
+      self.setResponse(response, res);
 
-      //call controller action
-      self.controllers[req.controller][req.action](req, function(response) {
+      //call controller action using the lookup from the external method map
+      self.controllers[req.controller][self.externalMethods[req.controller][req.action]](req, function(response) {
 
         //update response
-        self._setResponse(response, res);
+        self.setResponse(response, res);
 
         //call after action method
-        self.controllers[req.controller]._afterAction(req, res.response, function(response) {
+        self.controllers[req.controller].afterAction(req, res.response, function(response) {
 
           //update response
-          self._setResponse(response, res);
+          self.setResponse(response, res);
 
           //emit afterAction event for secondary procedures
-          self.controllers[req.controller]._emit('afterAction', req, res.response);
+          self.controllers[req.controller].emit('afterAction', req, res.response);
 
-          self._sendResponse(req, res);
+          self.sendResponse(req, res);
 
         });
 
@@ -516,7 +541,7 @@ module.exports = Class.extend({
   },
 
   //merge object onto res.response
-  _setResponse: function(obj, res) {
+  setResponse: function(obj, res) {
 
     if( !obj )
       return;
@@ -530,12 +555,12 @@ module.exports = Class.extend({
   },
 
   //override this to manipulate the request
-  _afterAction: function(req, res) {
+  afterAction: function(req, res) {
     return;
   },
 
   //send response
-  _sendResponse: function(req, res) {
+  sendResponse: function(req, res) {
 
     //calculate request time
     var endTime = new Date();
@@ -546,7 +571,7 @@ module.exports = Class.extend({
     this.log.break();
 
     //trigger after action hook
-    this._afterAction(req,res);
+    this.afterAction(req,res);
 
     //send response
     res.json(res.response);
@@ -564,7 +589,7 @@ module.exports = Class.extend({
     //start listening on port
     this.express.listen(port);
 
-    this._emit('started');
+    this.emit('started');
 
   }
 
