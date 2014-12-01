@@ -227,9 +227,7 @@ module.exports = Class.extend({
           var Controller = require(self.appPath + '/modules/' + moduleName + '/controller');
 
           if (Controller) {
-            var controller = new Controller(self);
-            self.controllers[controller.name] = controller;
-            self.externalMethods[controller.name] = {};
+            self.loadController(moduleName, Controller);
           }
         }
 
@@ -249,9 +247,7 @@ module.exports = Class.extend({
         var Controller = require(self.appPath + '/controllers/' + controllerName);
 
         if (Controller) {
-          var controller = new Controller(self);
-          self.controllers[controller.name] = controller;
-          self.externalMethods[controller.name] = {};
+          self.loadController(controllerName, Controller);
         }
 
       });
@@ -259,6 +255,22 @@ module.exports = Class.extend({
     }
 
     this.log.info('controllers loaded:',Object.keys(this.controllers));
+
+  },
+
+  //load the controller
+  loadController: function(controllerName, Controller) {
+
+    //instantiate the controller
+    var controller = new Controller(this);
+
+    //assign a name, if one is not assigned
+    if( !controller.name)
+      controller.name = controllerName;
+
+    //make the controller available to the application
+    this.controllers[controller.name] = controller;
+    this.externalMethods[controller.name] = {};
 
   },
 
