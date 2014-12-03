@@ -18,6 +18,6 @@ YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS  YSSY    YSS'
 
  */
 
-module.exports.Class = require('./core/base.js');
+module.exports.Class = require('superjs-base');
 module.exports.Application = require('./core/application.js');
 module.exports.Controller = require('./core/controller.js');

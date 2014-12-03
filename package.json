@@ -4,7 +4,7 @@
     "name": "Aaron Storck",
     "email": "aaronstorck@gmail.com"
   },
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Super-configurable, super-extendable, API framework for Node.JS.",
   "main": "index.js",
   "repository": "https://github.com/asleepinglion/superjs",
@@ -14,6 +14,9 @@
     "colors": "*",
     "cors": "^2.3.1",
     "express": "~4.1.1",
+    "handlebars": "^2.0.0",
+    "superjs-base": "^0.2.0",
+    "superjs-commander": "0.0.3",
     "superjs-logger": "*",
     "underscore": "~1.6.0"
   },

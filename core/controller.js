@@ -4,7 +4,7 @@
  */
 
 //require dependencies
-var Class = require('./base');
+var Class = require('superjs-base');
 
 module.exports = Class.extend({
 

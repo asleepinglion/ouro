@@ -8,7 +8,7 @@
 //load dependencies
 
 var express = require('express'),
-  Class = require('./base'),
+  Class = require('superjs-base'),
   events = require('events'),
   util = require('util'),
   fs = require('fs'),
@@ -182,6 +182,7 @@ module.exports = Class.extend({
 
   },
 
+  //initialize database engine
   initDBEngine: function() {
 
     //make sure an engine has been specified
