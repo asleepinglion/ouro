@@ -7,15 +7,16 @@
 `SuperJS` was built with client side Javascript in mind and although I'm sure it can be used to do more, the primary purpose is to provide a central JSON backend for rich client side applications. It's designed to scale and enable production-ready applications.
 
 
-####Starter Application
-Try out SuperJS quickly with the Starter application: 
-[https://github.com/asleepinglion/superjs-starter](https://github.com/asleepinglion/superjs-starter)
+####Installation
+It's easy to get started with SuperJS using a global npm package and the provided SuperJS CLI tool.
 
-- Clone the Starter Repository
-- Run `npm intall` to install required modules
+- Run `npm install -g superjs`
+- Navigate to the folder where you want to create a project.
+- Run `superjs new <projectName>`
+- Run `npm intall` inside the new project folder.
 - Update the `config/data.js` settings to point to a real database
-- Create a real module in the `modules` folder which reflects an actual table
-- Run `node app.js`
+- Create a resource for your API by executing `superjs gen resource <resourceName>`
+- Run `node start.js`
 
 ####Testing The API:
 

@@ -1,0 +1,10 @@
+{
+  "env": {
+    "node": true
+  },
+  "rules": {
+    "quotes": false,
+    "no-underscore-dangle": false,
+    "eol-last": false
+  }
+}

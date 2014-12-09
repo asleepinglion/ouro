@@ -1,0 +1,11 @@
+{
+  "name": "{{upper-camel-case projectName}}",
+  "version": "0.0.0",
+  "description": "API Application",
+  "main": "start.js",
+  "repository": "",
+  "dependencies": {
+    "superjs": "*"
+  },
+  "license": "MIT"
+}
