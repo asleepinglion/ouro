@@ -15,6 +15,7 @@ var express = require('express'),
   path = require('path'),
   domain = require('domain'),
   _ = require('underscore'),
+  merge = require('recursive-merge'),
   Promise = require('bluebird'),
   colors = require('colors/safe');
 
@@ -153,7 +154,7 @@ module.exports = Class.extend({
 
     var bodyParser = require('body-parser');
 
-    //maintain reference to self
+    //maintain reference to instance
     var self = this;
 
     //parse body for urlencoded form data
@@ -164,12 +165,17 @@ module.exports = Class.extend({
 
     //detect body parsing error
     this.express.use(function(err, req, res, next) {
-      if( err ) {
-        res.json({name: self.config.name, version: self.config.version, success: false, message: "The body of your request is invalid.", error: err});
-      }
-      next();
+      self.validateBody(err, req, res, next);
     });
 
+  },
+
+  validateBody: function(err, req, res, next) {
+    if( err ) {
+      res.status(400);
+      res.json({meta: {name: this.config.package.name, version: this.config.package.version, success: false}, errors: [{"id": "malformed_json", message: "The body of your request is invalid."}]});
+    }
+    next();
   },
 
   //load additional middleware
@@ -340,7 +346,7 @@ module.exports = Class.extend({
   //send default response
   defaultResponse: function(req, res) {
 
-    res.json({name: this.config.package.name, version: this.config.package.version, success: true});
+    res.json({meta:{name: this.config.package.name, version: this.config.package.version, success: true}});
 
   },
 
@@ -348,7 +354,7 @@ module.exports = Class.extend({
   describeResponse: function(req, res) {
 
     //init response object
-    var response = {name: this.config.package.name, version: this.config.package.version, success: true};
+    var response = {meta:{name: this.config.package.name, version: this.config.package.version, success: true}};
 
     //add external method map to the response
     response.controllers = this.externalMethods;
@@ -371,8 +377,10 @@ module.exports = Class.extend({
     //log access
     this.log.access(req.method+' '+req.path+' '+req.ip, req.body);
 
+    var temp = {meta:{name: this.config.package.name, version: this.config.package.version}};
+
     //initialize response object
-    this.setResponse({name: this.config.package.name, version: this.config.package.version}, res);
+    this.setResponse(temp, res);
 
     //set the request start time
     req.startTime = new Date();
@@ -438,15 +446,17 @@ module.exports = Class.extend({
       }
 
       if( !req.controller ) {
-        this.setResponse({success: false, message: 'Controller not found.'}, res);
+        res.status(404);
+        this.setResponse({meta:{success: false, message: 'Controller not found.'}}, res);
         return this.sendResponse(req,res);
       }
 
       if( !req.action ) {
+        res.status(404);
         if( req.actionType === 'REST' )
-          this.setResponse({success: false, message: 'REST Controller method '+req.method+' invalid.'}, res);
+          this.setResponse({meta:{success: false, message: 'REST Controller method '+req.method+' invalid.'}}, res);
         else
-          this.setResponse({success: false, message: 'Controller RPC method not found.'}, res);
+          this.setResponse({meta:{success: false, message: 'Controller RPC method not found.'}}, res);
         return this.sendResponse(req,res);
       }
 
@@ -456,7 +466,8 @@ module.exports = Class.extend({
 
     }
 
-    return this.sendResponse(req,res);
+    //WHAT?
+    //return this.sendResponse(req,res);
 
   },
 
@@ -486,7 +497,8 @@ module.exports = Class.extend({
       //make sure the _authorize method has been implemented on the auth controller
       if( !this.controllers[controllerName] || !this.controllers[controllerName].authorize ) {
         this.log.error("The "+controllerName+" controller's authorize method has not been implemented.");
-        this.setResponse({success: false, message: "The "+controllerName+" controller's _authorize method has not been implemented."}, res);
+        res.status(500);
+        this.setResponse({meta:{success: false, message: "The "+controllerName+" controller's _authorize method has not been implemented."}}, res);
         return this.sendResponse(req,res);
       }
 
@@ -496,7 +508,8 @@ module.exports = Class.extend({
         if( err || !user) {
 
           //if there was an error or the user was not found return failure
-          self.setResponse({success: false, message: "Authentication failed.", error: err}, res);
+          res.status(403);
+          self.setResponse({meta:{success: false, message: "Authentication failed.", error: err}}, res);
           return self.sendResponse(req,res);
 
         } else {
@@ -529,10 +542,15 @@ module.exports = Class.extend({
       self.setResponse(response, res);
 
       //call controller action using the lookup from the external method map
-      self.controllers[req.controller][self.externalMethods[req.controller][req.action]](req, function(response) {
+      self.controllers[req.controller][self.externalMethods[req.controller][req.action]](req, function(response, statusCode) {
 
         //update response
         self.setResponse(response, res);
+
+        //update status code if provided
+        if( statusCode ) {
+          res.status(statusCode);
+        }
 
         //call after action method
         self.controllers[req.controller].afterAction(req, res.response, function(response) {
@@ -563,7 +581,7 @@ module.exports = Class.extend({
       res.response = {};
 
     //extend response object with obj
-    res.response = _.extend(res.response, obj);
+    res.response = merge(res.response, obj);
 
   },
 
@@ -578,7 +596,7 @@ module.exports = Class.extend({
     //calculate request time
     var endTime = new Date();
     var requestDuration = endTime - req.startTime;
-    res.response.duration = requestDuration + 'ms';
+    res.response.meta.duration = requestDuration + 'ms';
 
     this.log.info('request duration:',{duration: requestDuration, unit:'ms'});
     this.log.break();
