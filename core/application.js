@@ -46,7 +46,6 @@ module.exports = Class.extend({
 
     //state version
     this.log.notify('SuperJS Version: '+require('../package.json').version);
-    this.log.info('server initializing...');
 
     //set application path
     this.appPath = path.dirname(process.mainModule.filename);
@@ -80,8 +79,6 @@ module.exports = Class.extend({
   //init request logger for development
   initLogger: function() {
 
-    console.log('initializing the logger....');
-
     var LogEngine = require('superjs-logger');
     this.log = new LogEngine(this);
   },
@@ -108,7 +105,7 @@ module.exports = Class.extend({
       this.configPath = require(this.appPath+this.configPath+'/environment')();
     }
 
-    this.log.info('using configuration path:', this.appPath+this.configPath);
+    this.log.info('configuration path:', this.configPath);
 
     //attempt to load server configuration
     if( fs.existsSync(this.appPath+this.configPath+'/server.js') ) {
@@ -141,51 +138,92 @@ module.exports = Class.extend({
 
   },
 
-  //init CORS (cross origin resource sharing)
-  initCORS: function() {
+  //attach CORS (cross origin resource sharing) middleware
+  bindCORS: function() {
 
     var cors = require('cors');
     this.express.use(cors());
 
   },
 
-  //load body parser
-  initBodyParser: function() {
-
-    var bodyParser = require('body-parser');
+  //attach response middleware
+  bindResponse: function() {
 
     //maintain reference to instance
     var self = this;
 
-    //parse body for urlencoded form data
-    this.express.use(bodyParser.urlencoded());
-
-    //parse body for json
-    this.express.use(bodyParser.json());
-
-    //detect body parsing error
-    this.express.use(function(err, req, res, next) {
-      self.validateBody(err, req, res, next);
+    this.express.use(function(req, res, next) {
+      self.initResponse(req, res, next);
     });
 
   },
 
-  validateBody: function(err, req, res, next) {
-    if( err ) {
-      res.status(400);
-      res.json({meta: {name: this.config.package.name, version: this.config.package.version, success: false}, errors: [{"id": "malformed_json", message: "The body of your request is invalid."}]});
+  //attach body parser middleware
+  bindBodyParser: function() {
+
+    var bodyParser = require('body-parser');
+    var multer = require('multer');
+
+    //maintain reference to instance
+    var self = this;
+
+    //parse body for json
+    this.express.use(bodyParser.json());
+
+    //parse body for application/x-www-form-urlencoded data
+    this.express.use(bodyParser.urlencoded({extended: true}));
+
+    //parse body for multipart/form-data
+    this.express.use(multer());
+  },
+
+  errorHandler: function(err, req, res, next) {
+
+    //maintain reference to instance
+    var self = this;
+
+    //set the response status based on the error
+    res.status(err.status);
+
+    //if 4**, assume invalid body, else unknown.
+    if( err.status >= 400 && err.status < 500 ) {
+
+      self.setResponse({
+        meta: {success: false},
+        errors: [{"id": "invalid_body", status: err.status, message: "The body of your request is invalid."}]
+      }, res);
+
+      self.sendResponse(req, res);
+
+    } else {
+      self.setResponse({
+        meta: {success: false},
+        errors: [{"id": "server_error", status: err.status, message: "The server encountered an unknown error."}]
+      }, res);
+
+      self.sendResponse(req, res);
     }
-    next();
   },
 
   //load additional middleware
   loadMiddleware: function() {
 
-    this.log.info('loading middleware...');
+    //maintain reference to instance
+    var self = this;
 
-    this.initCORS();
-    this.initBodyParser();
+    //bind response initializer
+    this.bindResponse();
 
+    //bind cors middleware
+    this.bindCORS();
+
+    //bind body parser
+    this.bindBodyParser();
+
+    //handle errors from middleware
+    this.express.use(function(err, req, res, next) {
+      self.errorHandler(err, req, res, next);
+    });
   },
 
   //initialize database engine
@@ -213,8 +251,6 @@ module.exports = Class.extend({
 
   //load controllers by going through module folders
   loadControllers: function() {
-
-    this.log.info('loading controllers...');
 
     //maintain reference to self
     var self = this;
@@ -318,54 +354,26 @@ module.exports = Class.extend({
   //configure the router
   configureRouter: function() {
 
-    this.log.info('configuring router...');
-
     //maintain reference to self
     var self = this;
 
     //setup default route
-    this.express.get('/', function(req, res) {
-      self.defaultResponse(req, res);
-    });
+    this.express.get('/',
+      function(req, res) { self.defaultResponse(req, res); }
+    );
 
     //setup describe route
-    this.express.get('/describe', function(req, res) {
-      self.describeResponse(req, res);
-    });
+    this.express.get('/describe',
+      function(req, res) { self.describeResponse(req, res); }
+    );
 
     //setup request & response chain
     this.express.all('*',
-      function(req, res, next) { self.initResponse(req, res, next) },
       function(req, res, next) { self.processRequest(req, res, next) },
       function(req, res, next) { self.authenticateRequest(req, res, next) },
       function(req, res, next) { self.handleRequest(req, res, next) }
     );
 
-  },
-
-  //send default response
-  defaultResponse: function(req, res) {
-
-    res.json({meta:{name: this.config.package.name, version: this.config.package.version, success: true}});
-
-  },
-
-  //send default response
-  describeResponse: function(req, res) {
-
-    //init response object
-    var response = {meta:{name: this.config.package.name, version: this.config.package.version, success: true}};
-
-    //add external method map to the response
-    response.controllers = this.externalMethods;
-
-    res.json(response);
-
-  },
-
-  //override this to manipulate the request
-  beforeAction: function(req, res) {
-    return;
   },
 
   //initialize the response object
@@ -388,6 +396,33 @@ module.exports = Class.extend({
     //proceed to next request process
     return next();
 
+  },
+
+  //send default response
+  defaultResponse: function(req, res) {
+
+    this.setResponse({meta:{success: true}}, res);
+    this.sendResponse(req, res);
+
+  },
+
+  //send default response
+  describeResponse: function(req, res) {
+
+    //init response object
+    var response = {meta:{success: true}};
+
+    //add external method map to the response
+    response.controllers = this.externalMethods;
+
+    this.setResponse(response, res);
+    this.sendResponse(req, res);
+
+  },
+
+  //override this to manipulate the request
+  beforeAction: function(req, res) {
+    return;
   },
 
   //process request for REST & RPC methods
@@ -446,17 +481,15 @@ module.exports = Class.extend({
       }
 
       if( !req.controller ) {
-        res.status(404);
-        this.setResponse({meta:{success: false, message: 'Controller not found.'}}, res);
+        this.setResponse({meta:{success: false}, errors:[{code: 'controller_not_found', status: 404, message: 'Controller not found.'}]}, res, 404);
         return this.sendResponse(req,res);
       }
 
       if( !req.action ) {
-        res.status(404);
         if( req.actionType === 'REST' )
-          this.setResponse({meta:{success: false, message: 'REST Controller method '+req.method+' invalid.'}}, res);
+          this.setResponse({meta:{success: false}, errors:[{code: 'method_not_found', status: 404, message: 'REST Controller method '+req.method+' invalid.'}]}, res, 404);
         else
-          this.setResponse({meta:{success: false, message: 'Controller RPC method not found.'}}, res);
+          this.setResponse({meta:{success: false}, errors:[{code: 'method_not_found', status: 404, message: 'Controller RPC method not found.'}]}, res, 404);
         return this.sendResponse(req,res);
       }
 
@@ -465,9 +498,6 @@ module.exports = Class.extend({
       return next();
 
     }
-
-    //WHAT?
-    //return this.sendResponse(req,res);
 
   },
 
@@ -497,8 +527,7 @@ module.exports = Class.extend({
       //make sure the _authorize method has been implemented on the auth controller
       if( !this.controllers[controllerName] || !this.controllers[controllerName].authorize ) {
         this.log.error("The "+controllerName+" controller's authorize method has not been implemented.");
-        res.status(500);
-        this.setResponse({meta:{success: false, message: "The "+controllerName+" controller's _authorize method has not been implemented."}}, res);
+        this.setResponse({meta:{success: false}, errors:[{code: 'authorize_not_configured', status: 500, message: "The "+controllerName+" controller's _authorize method has not been implemented."}]}, res, 500);
         return this.sendResponse(req,res);
       }
 
@@ -508,8 +537,7 @@ module.exports = Class.extend({
         if( err || !user) {
 
           //if there was an error or the user was not found return failure
-          res.status(403);
-          self.setResponse({meta:{success: false, message: "Authentication failed.", error: err}}, res);
+          self.setResponse({meta:{success: false}, errors:[{code: 'authentication_failed', status: 403, message: "Authentication failed.", error: err}]}, res, 403);
           return self.sendResponse(req,res);
 
         } else {
@@ -542,15 +570,10 @@ module.exports = Class.extend({
       self.setResponse(response, res);
 
       //call controller action using the lookup from the external method map
-      self.controllers[req.controller][self.externalMethods[req.controller][req.action]](req, function(response, statusCode) {
+      self.controllers[req.controller][self.externalMethods[req.controller][req.action]](req, function(response, status) {
 
         //update response
-        self.setResponse(response, res);
-
-        //update status code if provided
-        if( statusCode ) {
-          res.status(statusCode);
-        }
+        self.setResponse(response, res, status);
 
         //call after action method
         self.controllers[req.controller].afterAction(req, res.response, function(response) {
@@ -572,7 +595,7 @@ module.exports = Class.extend({
   },
 
   //merge object onto res.response
-  setResponse: function(obj, res) {
+  setResponse: function(obj, res, status) {
 
     if( !obj )
       return;
@@ -582,6 +605,11 @@ module.exports = Class.extend({
 
     //extend response object with obj
     res.response = merge(res.response, obj);
+
+    //set response status if set
+    if( status ) {
+      res.status(status);
+    }
 
   },
 

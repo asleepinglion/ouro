@@ -18,12 +18,12 @@
     "cors": "^2.3.1",
     "express": "~4.1.1",
     "handlebars": "^2.0.0",
+    "multer": "^0.1.6",
     "recursive-merge": "^1.2.0",
     "superjs-base": "^0.2.0",
     "superjs-commander": "0.0.3",
     "superjs-logger": "*",
-    "underscore": "~1.6.0",
-    "xtend": "^4.0.0"
+    "underscore": "~1.6.0"
   },
   "license": "MIT"
 }
