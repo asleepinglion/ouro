@@ -172,6 +172,9 @@ module.exports = Class.extend({
 
     var modulesPath = this.config.appPath+"/modules";
 
+    //store the resource path
+    var resourcePath = this.config.appPath+"/modules/"+name.toLowerCase();
+
     //make sure the modules directory exist
     if( !fs.existsSync(modulesPath) ) {
       this.app.log.info(":: creating modules folder:", modulesPath);
