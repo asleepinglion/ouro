@@ -111,9 +111,9 @@ module.exports = Class.extend({
     if( !fs.existsSync(this.config.appPath+"/modules") ) {
 
       //TODO: use prompt to make sure the user wants to do this
-      this.app.cli.confirm('Would you like to create the modules directory?', function(answer) {
-        console.log("answer:",answer);
-      });
+      //this.app.cli.confirm('Would you like to create the modules directory?', function(answer) {
+      //  console.log("answer:",answer);
+      //});
     }
 
     //store the resource path
