@@ -1,14 +1,10 @@
-/*
- * Application *
- * the base application used by the API *
- *
- * @exports Application
+/**
+ * @module API
+ * @submodule Application
  */
 
-//load dependencies
-
 var express = require('express'),
-  Class = require('superjs-base'),
+  SuperJS = require('../index'),
   events = require('events'),
   util = require('util'),
   fs = require('fs'),
@@ -19,33 +15,31 @@ var express = require('express'),
   Promise = require('bluebird'),
   colors = require('colors/safe');
 
-module.exports = Class.extend({
+/**
+ * The SuperJS Application Class is the heart of the API, responsible for configuring express,
+ * any middleware, managing routes & connections, and responding to requests.
+ *
+ * @exports Application
+ * @namespace SuperJS
+ * @extends SuperJS.Class
+ */
+
+module.exports = SuperJS.Class.extend({
 
   //initialize the application
   init: function() {
 
-    //console log emblem
-    console.log(colors.cyan("\n\n  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs  "));
-    console.log(colors.cyan(" d%%%%SP  .SS       SS.  .SS~YS%%%%b    d%%%%SP  .SS~YS%%%%b      .SS   d%%%%SP  "));
-    console.log(colors.cyan("d%S'    S%S       S%S  S%S   `S%b  d%S'    S%S   `S%b     S%S  d%S'    "));
-    console.log(colors.cyan("S%|     S%S       S%S  S%S    S%S  S%S     S%S    S%S     S%S  S%|     "));
-    console.log(colors.cyan("S&S     S&S       S&S  S%S    d*S  S&S     S%S    d*S     S&S  S&S     "));
-    console.log(colors.cyan("Y&Ss    S&S       S&S  S&S   .S*S  S&S_Ss  S&S   .S*S     S&S  Y&Ss    "));
-    console.log(colors.red("`S&&S   S&S       S&S  S&S_sdSSS   S&S~SP  S&S_sdSSS      S&S  `S&&S   "));
-    console.log(colors.red("  `S*S  S&S       S&S  S&S~YSSY    S&S     S&S~YSY%b      S&S    `S*S  "));
-    console.log(colors.red("   l*S  S*b       d*S  S*S         S*b     S*S   `S%b     d*S     l*S  "));
-    console.log(colors.red("  .S*P  S*S.     .S*S  S*S         S*S.    S*S    S%S    .S*S    .S*P  "));
-    console.log(colors.red("sSS*S    SSSbs_sdSSS   S*S          SSSbs  S*S    S&S  sdSSS   sSS*S   "));
-    console.log(colors.red("YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS  YSSY    YSS'    "));
-    console.log(colors.red("                       SP                  SP                          "));
-    console.log(colors.red("                       Y                   Y                           \n"));
+    //define name
+    this.name = 'application';
 
+    //display emblem
+    this.displayEmblem();
 
     //initialize logger
     this.initLogger();
 
     //state version
-    this.log.notify('SuperJS Version: '+require('../package.json').version);
+    console.log(colors.cyan('SuperJS Version: ')+require('../package.json').version);
 
     //set application path
     this.appPath = path.dirname(process.mainModule.filename);
@@ -55,6 +49,9 @@ module.exports = Class.extend({
 
     //instantiate express application
     this.express = express();
+
+    //maintain list of middleware to load
+    this.middleware = [];
 
     //maintain list of database connections
     this.connections = {};
@@ -69,11 +66,31 @@ module.exports = Class.extend({
     this.externalMethods = {};
 
     //server initialization
+    this.enableMiddleware();
     this.loadMiddleware();
     this.initDBEngine();
     this.loadControllers();
     this.buildMethodMap();
-    this.configureRouter();
+
+  },
+
+  //display superjs emblem
+  displayEmblem: function() {
+
+    console.log(colors.cyan("\n\n  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs  "));
+    console.log(colors.cyan(" d%%%%SP  .SS       SS.  .SS~YS%%%%b    d%%%%SP  .SS~YS%%%%b      .SS   d%%%%SP  "));
+    console.log(colors.cyan("d%S'    S%S       S%S  S%S   `S%b  d%S'    S%S   `S%b     S%S  d%S'    "));
+    console.log(colors.cyan("S%|     S%S       S%S  S%S    S%S  S%S     S%S    S%S     S%S  S%|     "));
+    console.log(colors.cyan("S&S     S&S       S&S  S%S    d*S  S&S     S%S    d*S     S&S  S&S     "));
+    console.log(colors.cyan("Y&Ss    S&S       S&S  S&S   .S*S  S&S_Ss  S&S   .S*S     S&S  Y&Ss    "));
+    console.log(colors.red("`S&&S   S&S       S&S  S&S_sdSSS   S&S~SP  S&S_sdSSS      S&S  `S&&S   "));
+    console.log(colors.red("  `S*S  S&S       S&S  S&S~YSSY    S&S     S&S~YSY%b       S&S    `S*S  "));
+    console.log(colors.red("   l*S  S*b       d*S  S*S         S*b     S*S   `S%b     d*S     l*S  "));
+    console.log(colors.red("  .S*P  S*S.     .S*S  S*S         S*S.    S*S    S%S    .S*S    .S*P  "));
+    console.log(colors.red("sSS*S    SSSbs_sdSSS   S*S          SSSbs  S*S    S&S  sdSSS   sSS*S   "));
+    console.log(colors.red("YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS  YSSY    YSS'    "));
+    console.log(colors.red("                       SP                  SP                          "));
+    console.log(colors.red("                       Y                   Y                           \n"));
   },
 
   //init request logger for development
@@ -138,8 +155,39 @@ module.exports = Class.extend({
 
   },
 
+  enableMiddleware: function() {
+
+    //maintain reference to instance
+    var self = this;
+
+    this.middleware = [
+
+      //enable cross origin resource sharing
+      self.enableCors,
+
+      //bind middleware to initialize response object
+      self.enableResponse,
+
+      //enable the body parser
+      self.enableBodyParser,
+
+      //enable the superjs router
+      self.enableRouter
+    ];
+  },
+
+  //load middleware
+  loadMiddleware: function() {
+
+    //loop through middleware and execute methods to bind them to express
+    for( var i in this.middleware ) {
+      this.middleware[i].apply(this);
+    }
+
+  },
+
   //attach CORS (cross origin resource sharing) middleware
-  bindCORS: function() {
+  enableCors: function() {
 
     var cors = require('cors');
     this.express.use(cors());
@@ -147,7 +195,7 @@ module.exports = Class.extend({
   },
 
   //attach response middleware
-  bindResponse: function() {
+  enableResponse: function() {
 
     //maintain reference to instance
     var self = this;
@@ -159,7 +207,7 @@ module.exports = Class.extend({
   },
 
   //attach body parser middleware
-  bindBodyParser: function() {
+  enableBodyParser: function() {
 
     var bodyParser = require('body-parser');
     var multer = require('multer');
@@ -175,55 +223,36 @@ module.exports = Class.extend({
 
     //parse body for multipart/form-data
     this.express.use(multer());
-  },
 
-  errorHandler: function(err, req, res, next) {
-
-    //maintain reference to instance
-    var self = this;
-
-    //set the response status based on the error
-    res.status(err.status);
-
-    //if 4**, assume invalid body, else unknown.
-    if( err.status >= 400 && err.status < 500 ) {
-
-      self.setResponse({
-        meta: {success: false},
-        errors: [{"id": "invalid_body", status: err.status, message: "The body of your request is invalid."}]
-      }, res);
-
-      self.sendResponse(req, res);
-
-    } else {
-      self.setResponse({
-        meta: {success: false},
-        errors: [{"id": "server_error", status: err.status, message: "The server encountered an unknown error."}]
-      }, res);
-
-      self.sendResponse(req, res);
-    }
-  },
-
-  //load additional middleware
-  loadMiddleware: function() {
-
-    //maintain reference to instance
-    var self = this;
-
-    //bind response initializer
-    this.bindResponse();
-
-    //bind cors middleware
-    this.bindCORS();
-
-    //bind body parser
-    this.bindBodyParser();
-
-    //handle errors from middleware
+    //handle errors from body parser
     this.express.use(function(err, req, res, next) {
-      self.errorHandler(err, req, res, next);
+      //set the response status based on the error
+      res.status(err.status);
+
+      //if 4**, assume invalid body, else unknown.
+      if( err.status >= 400 && err.status < 500 ) {
+
+        self.setResponse({meta: {success: false}, errors: [{"id": "invalid_body", status: err.status, message: "The body of your request is invalid."}]}, res);
+
+        self.sendResponse(req, res);
+
+      } else {
+        self.setResponse({meta: {success: false}, errors: [{"id": "server_error", status: err.status, message: "The server encountered an unknown error."}]}, res);
+        self.sendResponse(req, res);
+      }
     });
+  },
+
+  //attach the superjs router middleware
+  enableRouter: function() {
+
+    //maintain reference to self
+    var self = this;
+
+    this.express.use(function(req, res) {
+        self.router(req, res);
+    });
+
   },
 
   //initialize database engine
@@ -254,6 +283,9 @@ module.exports = Class.extend({
 
     //maintain reference to self
     var self = this;
+
+    //load application controller
+    this.controllers['application'] = this;
 
     //check if files are stored in modules or by type
     if( fs.existsSync(self.appPath+'/modules') ) {
@@ -322,6 +354,9 @@ module.exports = Class.extend({
 
     var firstCharacter = '';
 
+    //setup application controller
+    this.externalMethods['application'] = {};
+
     //loop through controllers
     for( var controllerName in this.controllers ) {
 
@@ -329,7 +364,7 @@ module.exports = Class.extend({
       for( var method in this.controllers[controllerName] ) {
 
         //we only want functions
-        if( typeof this.controllers[controllerName][method] === 'function' ) {
+        if( method !== '_super' && typeof this.controllers[controllerName][method] === 'function' ) {
 
           //capture the first character of the method name
           firstCharacter = method.substr(0,1);
@@ -349,46 +384,20 @@ module.exports = Class.extend({
       }
 
     }
-  },
 
-  //configure the router
-  configureRouter: function() {
-
-    //maintain reference to self
-    var self = this;
-
-    //setup default route
-    this.express.get('/',
-      function(req, res) { self.defaultResponse(req, res); }
-    );
-
-    //setup describe route
-    this.express.get('/describe',
-      function(req, res) { self.describeResponse(req, res); }
-    );
-
-    //setup request & response chain
-    this.express.all('*',
-      function(req, res, next) { self.processRequest(req, res, next) },
-      function(req, res, next) { self.authenticateRequest(req, res, next) },
-      function(req, res, next) { self.handleRequest(req, res, next) }
-    );
-
+    console.log(this.externalMethods);
   },
 
   //initialize the response object
   initResponse: function(req, res, next) {
 
-    //trigger before action hook
-    this.beforeAction(req, res);
-
     //log access
     this.log.access(req.method+' '+req.path+' '+req.ip, req.body);
 
-    var temp = {meta:{name: this.config.package.name, version: this.config.package.version}};
+    var response = {meta:{name: this.config.package.name, version: this.config.package.version}};
 
     //initialize response object
-    this.setResponse(temp, res);
+    this.setResponse(response, res);
 
     //set the request start time
     req.startTime = new Date();
@@ -398,106 +407,174 @@ module.exports = Class.extend({
 
   },
 
-  //send default response
-  defaultResponse: function(req, res) {
+  router: function(req, res) {
 
-    this.setResponse({meta:{success: true}}, res);
-    this.sendResponse(req, res);
+    //maintain reference to instance
+    var self = this;
 
-  },
+    //determine the controller and action
+    self.processRequest(req)
 
-  //send default response
-  describeResponse: function(req, res) {
+      //authenticate the request
+      .then(function() {
+        return self.authenticateRequest(req);
+      })
 
-    //init response object
-    var response = {meta:{success: true}};
+      //execute the request
+      .then(function() {
+        return self.handleRequest(req, res);
+      })
 
-    //add external method map to the response
-    response.controllers = this.externalMethods;
+      //send response
+      .then(function() {
+        return self.sendResponse(req, res);
+      })
 
-    this.setResponse(response, res);
-    this.sendResponse(req, res);
-
+      //handle any errors
+      .catch(function(err) {
+        console.log(err.stack);
+        self.setResponse({meta:{success: false}, errors:[err]}, res, err.status);
+        self.sendResponse(req,res);
+      });
   },
 
   //override this to manipulate the request
-  beforeAction: function(req, res) {
-    return;
+  beforeAction: function(req) {
+    return new Promise(function(resolve, reject) {
+      resolve();
+    });
+  },
+
+  //configure default response
+  Default: function(req) {
+
+    console.log('default response called');
+
+    return new Promise(function(resolve, reject) {
+
+      resolve({meta:{success: true}});
+
+    });
+
+  },
+
+  //configure API describe response
+  Describe: function(req) {
+
+    //maintain reference to instance
+    var self = this;
+
+    return new Promise(function(resolve, reject) {
+      //init response object
+      var response = {meta:{success: true}};
+
+      //add external method map to the response
+      response.controllers = self.externalMethods;
+
+      resolve(response);
+
+    });
+
   },
 
   //process request for REST & RPC methods
-  processRequest: function(req, res, next) {
+  processRequest: function(req) {
 
-    var path = req.path.split('/');
+    //maintain reference to instance
+    var self = this;
 
-    if( path.length > 1 ) {
+    //return promise
+    return new Promise(function(resolve, reject) {
 
-      //Handle REST Resource Routes
-      if( path.length == 2 ) {
+      var path = req.path.split('/');
 
-        req.actionType = 'REST';
+      console.log(req.path, path.length, path);
 
-        if( path[1] in this.controllers ) {
+      if( path.length > 1 ) {
 
-          //set controller name
-          req.controller = path[1];
+        //Handle REST Resource Routes
+        if( path.length == 2 ) {
 
-          //check to see if this controller is rest enabled
-          if (this.controllers[req.controller].restEnabled ) {
+          if(_.isEmpty(path[1]) ) {
 
-            //determine action based on request method
-            if (req.method === 'GET') {
-              req.action = 'search';
-            } else if (req.method === 'POST') {
-              req.action = 'create';
-            } else if (req.method === 'PUT') {
-              req.action = 'update';
-            } else if (req.method === 'DELETE') {
-              req.action = 'delete';
+            req.controller = 'application';
+            req.action = 'default';
+
+          } else if( path[1] === 'describe' ) {
+
+            req.controller = 'application';
+            req.action = 'describe';
+
+          } else {
+
+            req.actionType = 'REST';
+
+            if (path[1] in self.controllers) {
+
+              //set controller name
+              req.controller = path[1];
+
+              //check to see if this controller is rest enabled
+              if (self.controllers[req.controller].restEnabled) {
+
+                //determine action based on request method
+                if (req.method === 'GET') {
+                  req.action = 'search';
+                } else if (req.method === 'POST') {
+                  req.action = 'create';
+                } else if (req.method === 'PUT') {
+                  req.action = 'update';
+                } else if (req.method === 'DELETE') {
+                  req.action = 'delete';
+                }
+              }
+
             }
           }
 
-        }
+          //handle RPC routes
+        } else if( path.length >= 3 ) {
 
-        //handle RPC routes
-      } else if( path.length >= 3 ) {
+          req.actionType = 'RPC';
 
-        req.actionType = 'RPC';
+          //check if controller exists
+          if( path[1] in self.controllers ) {
 
-        //check if controller exists
-        if( path[1] in this.controllers ) {
+            //set the controller name
+            req.controller = path[1];
 
-          //set the controller name
-          req.controller = path[1];
+            //check if action exists on controller
+            if( path[2] in self.externalMethods[path[1]]) {
 
-          //check if action exists on controller
-          if( path[2] in this.externalMethods[path[1]]) {
+              //set the action name
+              req.action = path[2];
+            }
 
-            //set the action name
-            req.action = path[2];
           }
-
         }
+
+        //reject if the requested controller doesn't exist
+        if( !req.controller ) {
+          return reject(new SuperJS.Error('controller_not_found', 404, 'Controller not found.'));
+        }
+
+        //reject if the requested action doesn't exist
+        if( !req.action ) {
+          if( req.actionType === 'REST' )
+            return reject(new SuperJS.Error('method_not_found', 404, 'REST Controller method '+req.method+' invalid.'));
+          else
+            return reject(new SuperJS.Error('method_not_found', 404, 'Controller RPC method '+req.method+' not found.'));
+        }
+
+        self.log.info('routing request:',{controller: req.controller, action: req.action});
+        resolve();
+      } else {
+
+        reject(new SuperJS.Error('malformed_request', 500, 'Something went wrong trying to process your request.'));
+
       }
 
-      if( !req.controller ) {
-        this.setResponse({meta:{success: false}, errors:[{code: 'controller_not_found', status: 404, message: 'Controller not found.'}]}, res, 404);
-        return this.sendResponse(req,res);
-      }
-
-      if( !req.action ) {
-        if( req.actionType === 'REST' )
-          this.setResponse({meta:{success: false}, errors:[{code: 'method_not_found', status: 404, message: 'REST Controller method '+req.method+' invalid.'}]}, res, 404);
-        else
-          this.setResponse({meta:{success: false}, errors:[{code: 'method_not_found', status: 404, message: 'Controller RPC method not found.'}]}, res, 404);
-        return this.sendResponse(req,res);
-      }
-
-      this.log.info('routing request:',{controller: req.controller, action: req.action});
-
-      return next();
-
-    }
+    });
 
   },
 
@@ -507,95 +584,107 @@ module.exports = Class.extend({
     //maintain reference to self
     var self = this;
 
-    //check if authentication is enabled
-    if( !this.config.security.enabled ) {
-      return next();
-    }
+    //return promise
+    return new Promise(function(resolve, reject) {
 
-    //check if the requested action is public
-    if( this.controllers[req.controller].public && _.contains(this.controllers[req.controller].public, req.action) ) {
-
-      return next();
-
-    } else {
-
-      this.log.info('authenticating request...');
-
-      //determine controller name for auth
-      var controllerName = ( this.config.security.controllerName ) ? this.config.security.controllerName : 'user';
-
-      //make sure the _authorize method has been implemented on the auth controller
-      if( !this.controllers[controllerName] || !this.controllers[controllerName].authorize ) {
-        this.log.error("The "+controllerName+" controller's authorize method has not been implemented.");
-        this.setResponse({meta:{success: false}, errors:[{code: 'authorize_not_configured', status: 500, message: "The "+controllerName+" controller's _authorize method has not been implemented."}]}, res, 500);
-        return this.sendResponse(req,res);
+      //check if authentication is enabled
+      if( !self.config.security.enabled ) {
+        return resolve();
       }
 
-      //execute authorize method on the auth controller
-      this.controllers[controllerName].authorize(req, function(err, user) {
+      //check if the requested action is public
+      if( self.controllers[req.controller].public && _.contains(self.controllers[req.controller].public, req.action) ) {
 
-        if( err || !user) {
+        return resolve();
 
-          //if there was an error or the user was not found return failure
-          self.setResponse({meta:{success: false}, errors:[{code: 'authentication_failed', status: 403, message: "Authentication failed.", error: err}]}, res, 403);
-          return self.sendResponse(req,res);
+      } else {
 
-        } else {
+        self.log.info('authenticating request...');
 
-          //otherwise continue to process request
-          return next();
+        //determine controller name for auth
+        var controllerName = ( self.config.security.controllerName ) ? self.config.security.controllerName : 'user';
+
+        //make sure the _authorize method has been implemented on the auth controller
+        if( !self.controllers[controllerName] || !self.controllers[controllerName].authorize ) {
+
+          self.log.error("The "+controllerName+" controller's authorize method has not been implemented.");
+          return reject(new SuperJS.Error('authorize_not_configured', 500, "The "+controllerName+" controller's _authorize method has not been implemented."));
+
         }
 
-      });
+        //execute authorize method on the auth controller
+        self.controllers[controllerName].authorize(req, function(err, user) {
 
-    }
+          if( err || !user) {
 
-  },
+            //if there was an error or the user was not found return failure
+            return reject(new SuperJS.Error('authentication_failed', 403, "Authentication failed."));
 
-  //handle request
-  handleRequest: function(req, res, next) {
+          } else {
 
-    //TODO: rewrite execution using promises?
-
-    //maintain reference to self
-    var self = this;
-
-    //emit beforeAction event for secondary procedures
-    this.controllers[req.controller].emit('beforeAction', req);
-
-    //call before action method
-    this.controllers[req.controller].beforeAction(req, function(response) {
-
-      //update response
-      self.setResponse(response, res);
-
-      //call controller action using the lookup from the external method map
-      self.controllers[req.controller][self.externalMethods[req.controller][req.action]](req, function(response, status) {
-
-        //update response
-        self.setResponse(response, res, status);
-
-        //call after action method
-        self.controllers[req.controller].afterAction(req, res.response, function(response) {
-
-          //update response
-          self.setResponse(response, res);
-
-          //emit afterAction event for secondary procedures
-          self.controllers[req.controller].emit('afterAction', req, res.response);
-
-          self.sendResponse(req, res);
+            //otherwise continue to process request
+            return resolve();
+          }
 
         });
 
-      });
+      }
 
     });
+  },
+
+  //execute request
+  handleRequest: function(req, res) {
+
+    //maintain reference to instance
+    var self = this;
+
+    //emit beforeAction events for secondary procedures
+    self.controllers[req.controller].emit('beforeAction', req);
+    self.controllers[req.controller].emit('before'+req.action.substr(0,1).toUpperCase()+req.action.substr(1,req.action.length-1), req);
+
+    //call before action method
+    return self.controllers[req.controller].beforeAction(req)
+
+      //update the response object
+      .then(function(response) {
+        console.log('response from beforeAction...')
+        self.setResponse(response, res);
+      })
+
+      //execute the requested action
+      .then(function() {
+        return self.controllers[req.controller][self.externalMethods[req.controller][req.action]](req)
+      })
+
+      //update the response object
+      .then(function(response) {
+        self.setResponse(response, res);
+      })
+
+      //call the after action method
+      .then(function() {
+        return self.controllers[req.controller].afterAction(req);
+      })
+
+      //update the response object
+      .then(function(response) {
+        self.setResponse(response, res);
+      })
+
+      //emit afterAction events for secondary procedures
+      .then(function() {
+        console.log('emitting after action event...');
+        self.controllers[req.controller].emit('afterAction', req, res.response);
+        self.controllers[req.controller].emit('after'+req.action.substr(0,1).toUpperCase()+req.action.substr(1,req.action.length-1), req);
+      });
 
   },
 
   //merge object onto res.response
   setResponse: function(obj, res, status) {
+
+    console.log('updating response...', obj);
 
     if( !obj )
       return;
@@ -614,26 +703,34 @@ module.exports = Class.extend({
   },
 
   //override this to manipulate the request
-  afterAction: function(req, res) {
-    return;
+  afterAction: function(req) {
+    return new Promise(function(resolve, reject) {
+      resolve();
+    });
   },
 
   //send response
   sendResponse: function(req, res) {
 
-    //calculate request time
-    var endTime = new Date();
-    var requestDuration = endTime - req.startTime;
-    res.response.meta.duration = requestDuration + 'ms';
+    //maintain reference to instance
+    var self = this;
 
-    this.log.info('request duration:',{duration: requestDuration, unit:'ms'});
-    this.log.break();
+    return new Promise(function(resolve, reject) {
 
-    //trigger after action hook
-    this.afterAction(req,res);
+      //calculate request time
+      var endTime = new Date();
+      var requestDuration = endTime - req.startTime;
+      res.response.meta.duration = requestDuration + 'ms';
 
-    //send response
-    res.json(res.response);
+      self.log.info('request duration:',{duration: requestDuration, unit:'ms'});
+      self.log.break();
+
+      //send response
+      res.json(res.response);
+
+      resolve();
+
+    });
 
   },
 
