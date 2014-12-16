@@ -31,8 +31,7 @@ module.exports = Class.extend({
 
     //return promise
     return new Promise(function(resolve, reject) {
-      console.log('before action...');
-      resolve({beforeAction: true});
+      resolve({});
     });
 
   },
@@ -42,8 +41,7 @@ module.exports = Class.extend({
 
     //return promise
     return new Promise(function(resolve, reject) {
-      console.log('after action...');
-      resolve({afterAction: true});
+      resolve({});
     });
   }
 

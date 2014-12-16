@@ -384,8 +384,6 @@ module.exports = SuperJS.Class.extend({
       }
 
     }
-
-    console.log(this.externalMethods);
   },
 
   //initialize the response object
@@ -432,7 +430,6 @@ module.exports = SuperJS.Class.extend({
 
       //handle any errors
       .catch(function(err) {
-        console.log(err.stack);
         self.setResponse({meta:{success: false}, errors:[err]}, res, err.status);
         self.sendResponse(req,res);
       });
@@ -447,8 +444,6 @@ module.exports = SuperJS.Class.extend({
 
   //configure default response
   Default: function(req) {
-
-    console.log('default response called');
 
     return new Promise(function(resolve, reject) {
 
@@ -487,8 +482,6 @@ module.exports = SuperJS.Class.extend({
     return new Promise(function(resolve, reject) {
 
       var path = req.path.split('/');
-
-      console.log(req.path, path.length, path);
 
       if( path.length > 1 ) {
 
@@ -648,7 +641,6 @@ module.exports = SuperJS.Class.extend({
 
       //update the response object
       .then(function(response) {
-        console.log('response from beforeAction...')
         self.setResponse(response, res);
       })
 
@@ -674,7 +666,6 @@ module.exports = SuperJS.Class.extend({
 
       //emit afterAction events for secondary procedures
       .then(function() {
-        console.log('emitting after action event...');
         self.controllers[req.controller].emit('afterAction', req, res.response);
         self.controllers[req.controller].emit('after'+req.action.substr(0,1).toUpperCase()+req.action.substr(1,req.action.length-1), req);
       });
@@ -683,8 +674,6 @@ module.exports = SuperJS.Class.extend({
 
   //merge object onto res.response
   setResponse: function(obj, res, status) {
-
-    console.log('updating response...', obj);
 
     if( !obj )
       return;
