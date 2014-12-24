@@ -1,31 +1,32 @@
 #!/usr/bin/env node
 
 /**
- * @module API
- * @submodule CLI
+ * SuperJS CLI
+ * Extension of the the SuperJS-Commander Class
+ *
+ * @class SuperCLI
+ * @extends SuperJS.Commander
  */
 
 "use strict";
 
+var SuperCommander = require('superjs-commander');
 var colors = require('colors');
 var handlebars = require('handlebars');
 var fs = require('fs');
 var pkg = require('../package.json');
 var path = require('path');
 
-/**
- * SuperJS CLI
- * Extension of the the SuperJS-Commander Class
- *
- * @class SuperCLI
- * @extends SuperJS.CLI
- */
+//TODO: refactor with custom solution for the superjs-cli -- see notes on superjs-commander
 
-var CLI = SuperJS.CLI.extend({
+var SuperCLI = SuperCommander.extend({
 
   init: function(config) {
 
-
+    //console log emblem
+    console.log();
+    console.log(colors.cyan("SuperJS API Framework")+" - "+colors.white('Version: '+config.version));
+    console.log(colors.gray("Super Extendable Framework for Rapid API Development"));
 
     //load handlebars templating engine
     this.hb = handlebars;
@@ -38,6 +39,9 @@ var CLI = SuperJS.CLI.extend({
 
     //register handlebar helpers for templates
     this.registerHelpers();
+
+    //parse the command line
+    this.parse();
 
   },
 
@@ -81,10 +85,18 @@ var CLI = SuperJS.CLI.extend({
     });
 
   }
+
 });
 
-//instantiate and configure the cli
-var cli = new CLI({version: pkg.version });
+var superCLI = new SuperCLI({
 
-//start the cli and process arguments
-cli.start();
+  //set the version based on the package
+  version: pkg.version,
+
+  //enable automatic help responses
+  autoHelp: true,
+
+  //enable version aliases
+  versionAliases: true
+
+});
