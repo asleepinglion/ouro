@@ -7,6 +7,9 @@
 
 "use strict";
 
+var SuperJS = require('../index');
+SuperJS.CLI = require('superjs-cli').CLI;
+
 var colors = require('colors');
 var handlebars = require('handlebars');
 var fs = require('fs');
@@ -25,8 +28,6 @@ var CLI = SuperJS.CLI.extend({
 
   init: function(config) {
 
-
-
     //load handlebars templating engine
     this.hb = handlebars;
 
@@ -35,6 +36,9 @@ var CLI = SuperJS.CLI.extend({
 
     //set the path for handle bar helpers
     this.config.helperPath = this.config.cliPath+"/helpers";
+
+    //set the template path
+    this.config.templatePath = this.config.cliPath+'/templates';
 
     //register handlebar helpers for templates
     this.registerHelpers();

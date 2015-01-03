@@ -1,19 +1,15 @@
-/**
- * @module API
- * @submodule Application
- */
+"use strict";
 
-var express = require('express'),
-  SuperJS = require('../index'),
-  events = require('events'),
-  util = require('util'),
-  fs = require('fs'),
-  path = require('path'),
-  domain = require('domain'),
-  _ = require('underscore'),
-  merge = require('recursive-merge'),
-  Promise = require('bluebird'),
-  colors = require('colors/safe');
+var express = require('express');
+var SuperJS = require('./index');
+var fs = require('fs');
+var path = require('path');
+var Promise = require('bluebird');
+var _ = require('underscore');
+var merge = require('recursive-merge');
+var colors = require('colors/safe');
+//var util = require('util');
+//var domain = require('domain');
 
 /**
  * The SuperJS Application Class is the heart of the API, responsible for configuring express,
@@ -39,7 +35,7 @@ module.exports = SuperJS.Class.extend({
     this.initLogger();
 
     //state version
-    console.log(colors.cyan('SuperJS Version: ')+require('../package.json').version);
+    console.log(colors.cyan('SuperJS Version: ') + require('./package.json').version);
 
     //set application path
     this.appPath = path.dirname(process.mainModule.filename);
@@ -68,13 +64,13 @@ module.exports = SuperJS.Class.extend({
     //server initialization
     this.enableMiddleware();
     this.loadMiddleware();
-    this.initDBEngine();
     this.loadControllers();
+    this.initConnections();
     this.buildMethodMap();
 
   },
 
-  //display superjs emblem
+  //print superjs emblem to standard output
   displayEmblem: function() {
 
     console.log(colors.cyan("\n\n  sSSs   .S       S.    .S_sSSs      sSSs   .S_sSSs        .S    sSSs  "));
@@ -93,29 +89,29 @@ module.exports = SuperJS.Class.extend({
     console.log(colors.red("                       Y                   Y                           \n"));
   },
 
-  //init request logger for development
+  //inititalize log utility
   initLogger: function() {
 
     var LogEngine = require('superjs-logger');
     this.log = new LogEngine(this);
   },
 
-  //load configuration
+  //load application configuration
   loadConfiguration: function() {
 
     //setup configuration object
     this.config = {};
 
     //attempt to load the package json
-    if( fs.existsSync(this.appPath+'/package.json') ) {
+    if( fs.existsSync(this.appPath + '/package.json') ) {
       this.config.package = require(this.appPath + '/package.json');
     } else {
-      console.error('A package.json is required ('+this.appPath + '/package.json'+')');
+      console.error('A package.json is required (' + this.appPath + '/package.json' + ')');
       process.exit();
     }
 
     //set default configuration path
-    this.configPath = '/config';
+    this.configPath = '/configuration';
 
     //detect environment path
     if( fs.existsSync(this.appPath+this.configPath+'/environment.js') ) {
@@ -155,6 +151,7 @@ module.exports = SuperJS.Class.extend({
 
   },
 
+  //setup list of middleware to load
   enableMiddleware: function() {
 
     //maintain reference to instance
@@ -176,7 +173,7 @@ module.exports = SuperJS.Class.extend({
     ];
   },
 
-  //load middleware
+  //attach middleware to the express application pipeline
   loadMiddleware: function() {
 
     //loop through middleware and execute methods to bind them to express
@@ -255,8 +252,103 @@ module.exports = SuperJS.Class.extend({
 
   },
 
+  //load controllers by going through module folders
+  loadControllers: function() {
+
+    //maintain reference to self
+    var self = this;
+
+    //load application controller
+    this.controllers.application = this;
+
+    //check if files are stored in modules or by type
+    if( fs.existsSync(self.appPath + '/modules') ) {
+
+      //get list of modules
+      var modules = fs.readdirSync(self.appPath + '/modules');
+
+      //load each controller
+      modules.map(function(moduleName) {
+
+        //make sure the controller exists
+        if (fs.existsSync(self.appPath + '/modules/' + moduleName + '/controller.js')) {
+
+          var Controller = require(self.appPath + '/modules/' + moduleName + '/controller');
+
+          if (Controller) {
+            self.loadController(moduleName, Controller);
+            self.loadBlueprint(moduleName, null, '/modules/' + moduleName);
+          }
+        }
+
+      });
+
+    }
+
+    this.log.info('controllers loaded:',Object.keys(this.controllers));
+
+
+  },
+
+  //load the controller
+  loadController: function(controllerName, Controller) {
+
+    //instantiate the controller
+    var controller = new Controller(this);
+
+    //assign a name, if one is not assigned
+    if( !controller.name) {
+      controller.name = controllerName;
+    }
+
+    //make the controller available to the application
+    this.controllers[controller.name] = controller;
+    this.externalMethods[controller.name] = {};
+
+  },
+
+  //deep merge blueprints for each controller
+  loadBlueprint: function(controllerName, blueprints, blueprintPath) {
+
+    //maintain a list of loaded blueprints at each depth
+    blueprints = (blueprints) ? blueprints : [];
+
+    //determine the path if this is the first iteration or a nested blueprint
+    if( blueprintPath ) {
+      blueprintPath = this.appPath + '/' + blueprintPath;
+    } else  {
+      blueprintPath = this.appPath + '/' + blueprints[blueprints.length - 1].extends;
+    }
+
+    //see if the blueprint actually exists at the given path
+    if (fs.existsSync(blueprintPath + '/blueprint.js')) {
+
+      //load the blueprint
+      var blueprint = require(blueprintPath + '/blueprint');
+
+      //add the blueprint to the depth list
+      blueprints.push(blueprint);
+
+      //recursively execute this method if the blueprint extends another
+      if( blueprint.extends ) {
+        return this.loadBlueprint(controllerName, blueprints);
+      }
+    } else {
+      //TODO: throw a warning if blueprint doesnt exist, and an error if it's an extension
+    }
+
+    //setup blueprint on the controller
+    this.controllers[controllerName].blueprint = {};
+
+    //progressively merge changes from the base up to the outermost blueprint (overwriting changes)
+    for( var i = blueprints.length - 1; i >= 0; i-- ) {
+      this.controllers[controllerName].blueprint = merge(blueprints[i], this.controllers[controllerName].blueprint);
+    }
+
+  },
+
   //initialize database engine
-  initDBEngine: function() {
+  initConnections: function() {
 
     //make sure an engine has been specified
     if( _.isEmpty(this.config.data.engine) ) {
@@ -275,77 +367,6 @@ module.exports = SuperJS.Class.extend({
 
     //initialize the engine
     var initializer = new this.engine.Initializer(this);
-
-  },
-
-  //load controllers by going through module folders
-  loadControllers: function() {
-
-    //maintain reference to self
-    var self = this;
-
-    //load application controller
-    this.controllers['application'] = this;
-
-    //check if files are stored in modules or by type
-    if( fs.existsSync(self.appPath+'/modules') ) {
-
-      //get list of modules
-      var modules = fs.readdirSync(self.appPath+'/modules');
-
-      //load each controller
-      modules.map(function(moduleName) {
-
-        //make sure the controller exists
-        if (fs.existsSync(self.appPath + '/modules/' + moduleName + '/controller.js')) {
-
-          var Controller = require(self.appPath + '/modules/' + moduleName + '/controller');
-
-          if (Controller) {
-            self.loadController(moduleName, Controller);
-          }
-        }
-
-      });
-
-    } else if( fs.existsSync(self.appPath+'/controllers') ) {
-
-      //get list of modules
-      var controllers = fs.readdirSync(self.appPath+'/controllers');
-
-      //load each controller
-      controllers.map(function(controllerName) {
-
-        //split the filename
-        controllerName = controllerName.split('.')[0];
-
-        var Controller = require(self.appPath + '/controllers/' + controllerName);
-
-        if (Controller) {
-          self.loadController(controllerName, Controller);
-        }
-
-      });
-
-    }
-
-    this.log.info('controllers loaded:',Object.keys(this.controllers));
-
-  },
-
-  //load the controller
-  loadController: function(controllerName, Controller) {
-
-    //instantiate the controller
-    var controller = new Controller(this);
-
-    //assign a name, if one is not assigned
-    if( !controller.name)
-      controller.name = controllerName;
-
-    //make the controller available to the application
-    this.controllers[controller.name] = controller;
-    this.externalMethods[controller.name] = {};
 
   },
 
@@ -370,13 +391,13 @@ module.exports = SuperJS.Class.extend({
           firstCharacter = method.substr(0,1);
 
           //underscores or capital letters signify external methods
-          if(firstCharacter == '_') {
+          if(firstCharacter === '_') {
 
-            this.externalMethods[controllerName][method.substr(1,method.length-1)] = method;
+            this.externalMethods[controllerName][method.substr(1, method.length - 1)] = method;
 
           } else if(firstCharacter === firstCharacter.toUpperCase() && firstCharacter !== firstCharacter.toLowerCase() ) {
 
-            this.externalMethods[controllerName][firstCharacter.toLowerCase()+method.substr(1,method.length-1)] = method;
+            this.externalMethods[controllerName][firstCharacter.toLowerCase() + method.substr(1, method.length - 1)] = method;
 
           }
 
@@ -430,6 +451,8 @@ module.exports = SuperJS.Class.extend({
 
       //handle any errors
       .catch(function(err) {
+
+        console.error(colors.red('error:'), JSON.stringify(err));
         self.setResponse({meta:{success: false}, errors:[err]}, res, err.status);
         self.sendResponse(req,res);
       });
@@ -485,7 +508,7 @@ module.exports = SuperJS.Class.extend({
 
       if( path.length > 1 ) {
 
-        //Handle REST Resource Routes
+        //Handle Application & REST Resource Routes
         if( path.length == 2 ) {
 
           if(_.isEmpty(path[1]) ) {
@@ -572,7 +595,7 @@ module.exports = SuperJS.Class.extend({
   },
 
   //check authentication
-  authenticateRequest: function(req, res, next) {
+  authenticateRequest: function(req) {
 
     //maintain reference to self
     var self = this;
@@ -600,8 +623,8 @@ module.exports = SuperJS.Class.extend({
         //make sure the _authorize method has been implemented on the auth controller
         if( !self.controllers[controllerName] || !self.controllers[controllerName].authorize ) {
 
-          self.log.error("The "+controllerName+" controller's authorize method has not been implemented.");
-          return reject(new SuperJS.Error('authorize_not_configured', 500, "The "+controllerName+" controller's _authorize method has not been implemented."));
+          self.log.error("The " + controllerName + " controller's authorize method has not been implemented.");
+          return reject(new SuperJS.Error('authorize_not_configured', 500, "The " + controllerName + " controller's _authorize method has not been implemented."));
 
         }
 
@@ -644,9 +667,24 @@ module.exports = SuperJS.Class.extend({
         self.setResponse(response, res);
       })
 
+      //execute parameter transforms
+      .then(function() {
+        return self.controllers[req.controller].transform(req);
+      })
+
+      //execute parameter validations
+      .then(function() {
+        return self.controllers[req.controller].validate(req);
+      })
+
+      //execute parameter sanitizations
+      .then(function() {
+        return self.controllers[req.controller].sanitize(req);
+      })
+
       //execute the requested action
       .then(function() {
-        return self.controllers[req.controller][self.externalMethods[req.controller][req.action]](req)
+        return self.controllers[req.controller][self.externalMethods[req.controller][req.action]](req);
       })
 
       //update the response object

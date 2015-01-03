@@ -5,11 +5,11 @@
  * @exports {object}
  */
 
-modules.export = {
+module.exports = {
 
   command: 'up',
 
-  description: 'Start a SuperJS Server...',
+  description: 'Start a SuperJS Server!',
 
   aliases: ['lift','start'],
 

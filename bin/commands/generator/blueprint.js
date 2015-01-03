@@ -5,25 +5,27 @@
  * @exports {object}
  */
 
-modules.export = {
+module.exports = {
 
   command: 'generate',
 
   description: 'Generate SuperJS files, methods, & other resources.',
 
-  aliases: ['new','gen'],
+  aliases: ['new', 'gen'],
 
   options: {
 
-    databaseEngine: {
+    dbEngine: {
 
       aliases: ['db'],
       description: 'The database engine lets you use any database backend or orm you desire.',
       params: {
 
         mode: {
-          in: ['waterline', 'thinky'],
-          defaultsTo: ''
+          validate: {
+            in: ['waterline', 'thinky'],
+            defaultsTo: ''
+          }
         }
 
       }
@@ -36,7 +38,7 @@ modules.export = {
     type: {
       description: 'The type of object you wish to create.',
       type: 'string',
-      in: ['resource','controller','model', 'method', 'action'],
+      in: ['project', 'resource', 'controller', 'model', 'method', 'action'],
       required: true
     },
 

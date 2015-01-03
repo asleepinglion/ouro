@@ -1,9 +1,6 @@
-/**
- * @module API
- * @submodule Error
- */
+"use strict";
 
-var Class = require('superjs-base');
+var SuperJS = require('./index');
 
 /**
  * A simple error class for SuperJS.
@@ -13,7 +10,7 @@ var Class = require('superjs-base');
  * @extends SuperJS.Class
  */
 
-Error.extend = Class.extend;
+Error.extend = SuperJS.Class.extend;
 
 module.exports = Error.extend({
 
