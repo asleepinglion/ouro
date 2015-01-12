@@ -13,7 +13,7 @@ var colors = require('colors/safe');
 
 /**
  * The SuperJS Application Class is the heart of the API, responsible for configuring express,
- * any middleware, managing routes & connections, and responding to requests.
+ * any middleware, loading services, managing routes & connections, and responding to requests.
  *
  * @exports Application
  * @namespace SuperJS
@@ -58,15 +58,20 @@ module.exports = SuperJS.Class.extend({
     //maintain list of loaded controllers
     this.controllers = {};
 
+    //maintain list of loaded services
+    this.services = {};
+
     //maintain list of available external methods
     this.externalMethods = {};
 
     //server initialization
     this.enableMiddleware();
     this.loadMiddleware();
+    this.loadServices();
     this.loadControllers();
-    this.initConnections();
     this.buildMethodMap();
+    this.loadBlueprints();
+    this.initConnections();
 
   },
 
@@ -148,6 +153,9 @@ module.exports = SuperJS.Class.extend({
     if( !this.config.security.enabled ) {
       this.log.warn('authentication disabled - see the security configuration file.');
     }
+
+    //update the logger configuration
+    this.log.configure(this.config.server.logger);
 
   },
 
@@ -252,6 +260,52 @@ module.exports = SuperJS.Class.extend({
 
   },
 
+  //load additional service libraries
+  loadServices: function() {
+
+    //maintain referecne to instance
+    var self = this;
+
+    if( fs.existsSync(self.appPath + '/services') ) {
+
+      //get list of services
+      var services = fs.readdirSync(self.appPath + '/services');
+
+      //load each service
+      services.map(function(serviceName) {
+
+        //make sure the controller exists
+        if (fs.existsSync(self.appPath + '/services/' + serviceName + '/service.js')) {
+
+          var Service = require(self.appPath + '/services/' + serviceName + '/service');
+
+          if (Service) {
+            self.loadService(serviceName, Service);
+          }
+        }
+
+      });
+
+      this.log.info('services loaded:',Object.keys(this.services));
+
+    }
+  },
+
+  //load the service
+  loadService: function(serviceName, Service) {
+
+    //instantiate the service
+    var service = new Service(this);
+
+    //assign a name, if one is not assigned
+    if( !service.name) {
+      service.name = serviceName;
+    }
+
+    //make the controller available to the application
+    this.services[service.name] = service;
+  },
+
   //load controllers by going through module folders
   loadControllers: function() {
 
@@ -260,8 +314,8 @@ module.exports = SuperJS.Class.extend({
 
     //load application controller
     this.controllers.application = this;
+    this.controllers.application.blueprint = {actions:{}};
 
-    //check if files are stored in modules or by type
     if( fs.existsSync(self.appPath + '/modules') ) {
 
       //get list of modules
@@ -277,7 +331,6 @@ module.exports = SuperJS.Class.extend({
 
           if (Controller) {
             self.loadController(moduleName, Controller);
-            self.loadBlueprint(moduleName, null, '/modules/' + moduleName);
           }
         }
 
@@ -286,8 +339,6 @@ module.exports = SuperJS.Class.extend({
     }
 
     this.log.info('controllers loaded:',Object.keys(this.controllers));
-
-
   },
 
   //load the controller
@@ -307,7 +358,66 @@ module.exports = SuperJS.Class.extend({
 
   },
 
-  //deep merge blueprints for each controller
+  //build controller method maps
+  buildMethodMap: function() {
+
+    var firstCharacter = '';
+    var methodName = '';
+
+    //setup application controller
+    this.externalMethods['application'] = {};
+
+    //loop through controllers
+    for( var controllerName in this.controllers ) {
+
+      //loop through methods
+      for( var method in this.controllers[controllerName] ) {
+
+        //we only want functions
+        if( method !== '_super' && typeof this.controllers[controllerName][method] === 'function' ) {
+
+          //capture the first character of the method name
+          firstCharacter = method.substr(0,1);
+
+          //underscores or capital letters signify external methods
+          if(firstCharacter === '_') {
+
+            methodName = method.substr(1, method.length - 1);
+            this.externalMethods[controllerName][methodName] = method;
+
+          } else if(firstCharacter === firstCharacter.toUpperCase() && firstCharacter !== firstCharacter.toLowerCase() ) {
+
+            methodName = firstCharacter.toLowerCase() + method.substr(1, method.length - 1);
+            this.externalMethods[controllerName][methodName] = method;
+
+          }
+
+        }
+      }
+
+    }
+  },
+
+  //load blueprints for controllers
+  loadBlueprints: function() {
+
+    //maintain reference to self
+    var self = this;
+
+    if( fs.existsSync(self.appPath + '/modules') ) {
+
+      //get list of modules
+      var modules = fs.readdirSync(self.appPath + '/modules');
+
+      //load each controller
+      modules.map(function(moduleName) {
+        self.loadBlueprint(moduleName, null, 'modules/' + moduleName);
+      });
+
+    }
+  },
+
+  //deep merge controller blueprint so they inherit from base controller blueprints
   loadBlueprint: function(controllerName, blueprints, blueprintPath) {
 
     //maintain a list of loaded blueprints at each depth
@@ -324,17 +434,15 @@ module.exports = SuperJS.Class.extend({
     if (fs.existsSync(blueprintPath + '/blueprint.js')) {
 
       //load the blueprint
-      var blueprint = require(blueprintPath + '/blueprint');
+      var loadedBlueprint = require(blueprintPath + '/blueprint');
 
       //add the blueprint to the depth list
-      blueprints.push(blueprint);
+      blueprints.push(loadedBlueprint);
 
       //recursively execute this method if the blueprint extends another
-      if( blueprint.extends ) {
+      if( loadedBlueprint.extends ) {
         return this.loadBlueprint(controllerName, blueprints);
       }
-    } else {
-      //TODO: throw a warning if blueprint doesnt exist, and an error if it's an extension
     }
 
     //setup blueprint on the controller
@@ -344,6 +452,89 @@ module.exports = SuperJS.Class.extend({
     for( var i = blueprints.length - 1; i >= 0; i-- ) {
       this.controllers[controllerName].blueprint = merge(blueprints[i], this.controllers[controllerName].blueprint);
     }
+
+    var blueprint = this.controllers[controllerName].blueprint;
+
+    //make sure the actions object exists on the blueprint
+    if( !blueprint.actions  ) {
+      this.log.warn('blueprint missing actions:', controllerName);
+      blueprint.actions = {};
+    }
+
+    //add missing external methods to blueprint to avoid further checks
+    for( var method in this.externalMethods[controllerName] ) {
+
+      if( !blueprint.actions[method] ) {
+        this.log.warn('blueprint missing action:', controllerName + "." + method);
+        blueprint.actions[method] = {params: {}};
+      }
+    }
+
+    //loop through actions for this blueprint
+    for( var action in blueprint.actions ) {
+
+      //loop through parameters for each action
+      for( var param in blueprint.actions[action].params ) {
+
+        //if transforms have been specified for this parameter
+        if( blueprint.actions[action].params[param].transform ) {
+
+          //loop through each transform
+          for( var transform in blueprint.actions[action].params[param].transform ) {
+
+            //warn & remove any transforms, validations, or sanitizations that don't exist
+            if( !this.services.transform[transform] ) {
+
+              this.log.warn('transform missing:',transform);
+              delete blueprint.actions[action].params[param].transform[transform];
+
+            } else {
+              //set to actual method for transform as a shortcut
+              //blueprint.actions[action].params[param].transform[transform] = this.services.transform[transform];
+            }
+          }
+        } else {
+          this.log.warn('blueprint missing transform:',controllerName + "." + action + "." + param);
+          blueprint.actions[action].params[param].transform = {};
+        }
+
+        //if validations have been specified for this parameter
+        if( blueprint.actions[action].params[param].validate ) {
+
+          //loop through each transform
+          for( var validation in blueprint.actions[action].params[param].validate ) {
+
+            //warn & remove any transforms, validations, or sanitizations that don't exist
+            if( !this.services.validate[validation] ) {
+
+              this.log.warn('validation missing:',validation);
+              delete blueprint.actions[action].params[param].validate[validation];
+            }
+          }
+        } else {
+          blueprint.actions[action].params[param].validate = {};
+        }
+
+        //if sanitzations have been specified for this parameter
+        if( blueprint.actions[action].params[param].sanitize ) {
+
+          //loop through each transform
+          for( var sanitization in blueprint.actions[action].params[param].sanitize ) {
+
+            //warn & remove any transforms, validations, or sanitizations that don't exist
+            if( !this.services.sanitize[sanitization] ) {
+
+              this.log.warn('sanitization missing:',sanitization);
+              delete blueprint.actions[action].params[param].sanitize[sanitization];
+            }
+          }
+        } else {
+          blueprint.actions[action].params[param].sanitize = {};
+        }
+      }
+    }
+
+    //this.log.debug('blueprint loaded for '+controllerName+':',blueprint);
 
   },
 
@@ -370,43 +561,6 @@ module.exports = SuperJS.Class.extend({
 
   },
 
-  //build controller method maps
-  buildMethodMap: function() {
-
-    var firstCharacter = '';
-
-    //setup application controller
-    this.externalMethods['application'] = {};
-
-    //loop through controllers
-    for( var controllerName in this.controllers ) {
-
-      //loop through methods
-      for( var method in this.controllers[controllerName] ) {
-
-        //we only want functions
-        if( method !== '_super' && typeof this.controllers[controllerName][method] === 'function' ) {
-
-          //capture the first character of the method name
-          firstCharacter = method.substr(0,1);
-
-          //underscores or capital letters signify external methods
-          if(firstCharacter === '_') {
-
-            this.externalMethods[controllerName][method.substr(1, method.length - 1)] = method;
-
-          } else if(firstCharacter === firstCharacter.toUpperCase() && firstCharacter !== firstCharacter.toLowerCase() ) {
-
-            this.externalMethods[controllerName][firstCharacter.toLowerCase() + method.substr(1, method.length - 1)] = method;
-
-          }
-
-        }
-      }
-
-    }
-  },
-
   //initialize the response object
   initResponse: function(req, res, next) {
 
@@ -426,6 +580,7 @@ module.exports = SuperJS.Class.extend({
 
   },
 
+  //configure method chain for requests
   router: function(req, res) {
 
     //maintain reference to instance
@@ -452,9 +607,17 @@ module.exports = SuperJS.Class.extend({
       //handle any errors
       .catch(function(err) {
 
-        console.error(colors.red('error:'), JSON.stringify(err));
+        self.log.error('An unexpected error occured while executing a request:');
+        self.log.object(err);
+        if( err.stack ) {
+          self.log.break();
+          self.log.object(err.stack);
+        }
+
+        self.log.break();
         self.setResponse({meta:{success: false}, errors:[err]}, res, err.status);
         self.sendResponse(req,res);
+
       });
   },
 
@@ -465,6 +628,7 @@ module.exports = SuperJS.Class.extend({
     });
   },
 
+  //todo: refactor & move application controller into actual controller class
   //configure default response
   Default: function(req) {
 
@@ -657,7 +821,7 @@ module.exports = SuperJS.Class.extend({
 
     //emit beforeAction events for secondary procedures
     self.controllers[req.controller].emit('beforeAction', req);
-    self.controllers[req.controller].emit('before'+req.action.substr(0,1).toUpperCase()+req.action.substr(1,req.action.length-1), req);
+    self.controllers[req.controller].emit('before' + req.action.substr(0,1).toUpperCase() + req.action.substr(1, req.action.length - 1), req);
 
     //call before action method
     return self.controllers[req.controller].beforeAction(req)
