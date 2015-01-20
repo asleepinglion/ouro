@@ -36,6 +36,7 @@ module.exports = SuperJS.Class.extend({
 
     //state version
     console.log(colors.cyan('SuperJS Version: ') + require('./package.json').version);
+    console.log();
 
     //set application path
     this.appPath = path.dirname(process.mainModule.filename);
@@ -149,13 +150,14 @@ module.exports = SuperJS.Class.extend({
       process.exit();
     }
 
+    //update the logger configuration
+    this.log.configure(this.config.server.logger);
+
     //warn about authentication being disabled
     if( !this.config.security.enabled ) {
       this.log.warn('authentication disabled - see the security configuration file.');
+      this.log.break();
     }
-
-    //update the logger configuration
-    this.log.configure(this.config.server.logger);
 
   },
 
@@ -238,7 +240,6 @@ module.exports = SuperJS.Class.extend({
       if( err.status >= 400 && err.status < 500 ) {
 
         self.setResponse({meta: {success: false}, errors: [{"id": "invalid_body", status: err.status, message: "The body of your request is invalid."}]}, res);
-
         self.sendResponse(req, res);
 
       } else {
@@ -312,9 +313,8 @@ module.exports = SuperJS.Class.extend({
     //maintain reference to self
     var self = this;
 
-    //load application controller
-    this.controllers.application = this;
-    this.controllers.application.blueprint = {actions:{}};
+    //load default controller
+    self.loadController('default', require(self.appPath + '/node_modules/superjs/modules/default/controller'));
 
     if( fs.existsSync(self.appPath + '/modules') ) {
 
@@ -364,9 +364,6 @@ module.exports = SuperJS.Class.extend({
     var firstCharacter = '';
     var methodName = '';
 
-    //setup application controller
-    this.externalMethods['application'] = {};
-
     //loop through controllers
     for( var controllerName in this.controllers ) {
 
@@ -409,6 +406,9 @@ module.exports = SuperJS.Class.extend({
       //get list of modules
       var modules = fs.readdirSync(self.appPath + '/modules');
 
+      //load default blueprint
+      self.loadBlueprint('default', null, 'node_modules/superjs/modules/default');
+
       //load each controller
       modules.map(function(moduleName) {
         self.loadBlueprint(moduleName, null, 'modules/' + moduleName);
@@ -417,7 +417,7 @@ module.exports = SuperJS.Class.extend({
     }
   },
 
-  //deep merge controller blueprint so they inherit from base controller blueprints
+  //load blueprint and its descendents
   loadBlueprint: function(controllerName, blueprints, blueprintPath) {
 
     //maintain a list of loaded blueprints at each depth
@@ -445,6 +445,12 @@ module.exports = SuperJS.Class.extend({
       }
     }
 
+    this.processBlueprint(controllerName, blueprints);
+  },
+
+  //deep merge controller blueprint so they inherit from parent blueprints
+  processBlueprint: function(controllerName, blueprints) {
+
     //setup blueprint on the controller
     this.controllers[controllerName].blueprint = {};
 
@@ -457,7 +463,7 @@ module.exports = SuperJS.Class.extend({
 
     //make sure the actions object exists on the blueprint
     if( !blueprint.actions  ) {
-      this.log.warn('blueprint missing actions:', controllerName);
+      this.log.warn('blueprint missing actions object:', {controller: controllerName});
       blueprint.actions = {};
     }
 
@@ -465,13 +471,27 @@ module.exports = SuperJS.Class.extend({
     for( var method in this.externalMethods[controllerName] ) {
 
       if( !blueprint.actions[method] ) {
-        this.log.warn('blueprint missing action:', controllerName + "." + method);
+        this.log.warn('blueprint missing action:', {controller: controllerName, action: method});
         blueprint.actions[method] = {params: {}};
       }
     }
 
+
     //loop through actions for this blueprint
     for( var action in blueprint.actions ) {
+
+      //delete if action is not actually present on the controller
+      if( Object.keys(this.externalMethods[controllerName]).indexOf(action) === -1 ) {
+        this.log.warn('controller missing action:', {controller: controllerName, action: action});
+        delete blueprint.actions[action];
+        continue;
+      }
+
+      //store the action method name on the blueprint
+      blueprint.actions[action]._method = this.externalMethods[controllerName][action];
+
+      //save a reference to the blueprint on the externalMethod map
+      this.externalMethods[controllerName][action] = blueprint.actions[action];
 
       //loop through parameters for each action
       for( var param in blueprint.actions[action].params ) {
@@ -485,12 +505,9 @@ module.exports = SuperJS.Class.extend({
             //warn & remove any transforms, validations, or sanitizations that don't exist
             if( !this.services.transform[transform] ) {
 
-              this.log.warn('transform missing:',transform);
+              this.log.warn('transform missing:',{transform: transform, controller: controllerName, parameter: param});
               delete blueprint.actions[action].params[param].transform[transform];
 
-            } else {
-              //set to actual method for transform as a shortcut
-              //blueprint.actions[action].params[param].transform[transform] = this.services.transform[transform];
             }
           }
         } else {
@@ -507,7 +524,7 @@ module.exports = SuperJS.Class.extend({
             //warn & remove any transforms, validations, or sanitizations that don't exist
             if( !this.services.validate[validation] ) {
 
-              this.log.warn('validation missing:',validation);
+              this.log.warn('validation missing:',{validation: validation, controller: controllerName, parameter: param});
               delete blueprint.actions[action].params[param].validate[validation];
             }
           }
@@ -524,7 +541,7 @@ module.exports = SuperJS.Class.extend({
             //warn & remove any transforms, validations, or sanitizations that don't exist
             if( !this.services.sanitize[sanitization] ) {
 
-              this.log.warn('sanitization missing:',sanitization);
+              this.log.warn('sanitization missing:',{sanitization: sanitization, controller: controllerName, parameter: param});
               delete blueprint.actions[action].params[param].sanitize[sanitization];
             }
           }
@@ -535,7 +552,7 @@ module.exports = SuperJS.Class.extend({
     }
 
     //this.log.debug('blueprint loaded for '+controllerName+':',blueprint);
-
+    //this.log.debug('external methods:',this.externalMethods);
   },
 
   //initialize database engine
@@ -565,7 +582,7 @@ module.exports = SuperJS.Class.extend({
   initResponse: function(req, res, next) {
 
     //log access
-    this.log.access(req.method+' '+req.path+' '+req.ip, req.body);
+    this.log.access('incoming request:',{method: req.method, url: req.originalUrl, ip: req.ip});
 
     var response = {meta:{name: this.config.package.name, version: this.config.package.version}};
 
@@ -607,15 +624,27 @@ module.exports = SuperJS.Class.extend({
       //handle any errors
       .catch(function(err) {
 
-        self.log.error('An unexpected error occured while executing a request:');
-        self.log.object(err);
-        if( err.stack ) {
-          self.log.break();
+        if( err instanceof SuperJS.Error ) {
+          self.log.warn('request failed:', {code: err.code, message: err.message});
+        } else {
+
+          err = new SuperJS.Error('unknown_error', 500, 'An unknown error occured processing the request.', err);
+          self.log.error('error occured:', {code: err.code, message: err.message });
+
+        }
+
+        if (err.stack) {
+          err.stack = err.stack.split('\n');
           self.log.object(err.stack);
         }
 
+        if( !self.config.server.stackTraces ) {
+          delete err.stack;
+        }
+
         self.log.break();
-        self.setResponse({meta:{success: false}, errors:[err]}, res, err.status);
+
+        self.setResponse({meta:{success: false}, error:err}, res, err.status);
         self.sendResponse(req,res);
 
       });
@@ -626,37 +655,6 @@ module.exports = SuperJS.Class.extend({
     return new Promise(function(resolve, reject) {
       resolve();
     });
-  },
-
-  //todo: refactor & move application controller into actual controller class
-  //configure default response
-  Default: function(req) {
-
-    return new Promise(function(resolve, reject) {
-
-      resolve({meta:{success: true}});
-
-    });
-
-  },
-
-  //configure API describe response
-  Describe: function(req) {
-
-    //maintain reference to instance
-    var self = this;
-
-    return new Promise(function(resolve, reject) {
-      //init response object
-      var response = {meta:{success: true}};
-
-      //add external method map to the response
-      response.controllers = self.externalMethods;
-
-      resolve(response);
-
-    });
-
   },
 
   //process request for REST & RPC methods
@@ -677,12 +675,12 @@ module.exports = SuperJS.Class.extend({
 
           if(_.isEmpty(path[1]) ) {
 
-            req.controller = 'application';
+            req.controller = 'default';
             req.action = 'default';
 
           } else if( path[1] === 'describe' ) {
 
-            req.controller = 'application';
+            req.controller = 'default';
             req.action = 'describe';
 
           } else {
@@ -774,7 +772,6 @@ module.exports = SuperJS.Class.extend({
 
       //check if the requested action is public
       if( self.controllers[req.controller].public && _.contains(self.controllers[req.controller].public, req.action) ) {
-
         return resolve();
 
       } else {
@@ -819,7 +816,7 @@ module.exports = SuperJS.Class.extend({
     //maintain reference to instance
     var self = this;
 
-    //emit beforeAction events for secondary procedures
+    //emit beforeAction events for secondary operations
     self.controllers[req.controller].emit('beforeAction', req);
     self.controllers[req.controller].emit('before' + req.action.substr(0,1).toUpperCase() + req.action.substr(1, req.action.length - 1), req);
 
@@ -828,32 +825,25 @@ module.exports = SuperJS.Class.extend({
 
       //update the response object
       .then(function(response) {
-        self.setResponse(response, res);
+        return self.setResponse(response, res);
       })
 
-      //execute parameter transforms
+      //verify the request by transforming, validating, and sanitizing parameters
       .then(function() {
-        return self.controllers[req.controller].transform(req);
-      })
-
-      //execute parameter validations
-      .then(function() {
-        return self.controllers[req.controller].validate(req);
-      })
-
-      //execute parameter sanitizations
-      .then(function() {
-        return self.controllers[req.controller].sanitize(req);
+        if( self.controllers[req.controller].verify ) {
+          return self.controllers[req.controller].verify(req);
+        }
       })
 
       //execute the requested action
       .then(function() {
-        return self.controllers[req.controller][self.externalMethods[req.controller][req.action]](req);
+        self.log.debug('executing action:',self.externalMethods[req.controller][req.action]._method);
+        return self.controllers[req.controller][self.externalMethods[req.controller][req.action]._method](req);
       })
 
       //update the response object
       .then(function(response) {
-        self.setResponse(response, res);
+        return self.setResponse(response, res);
       })
 
       //call the after action method
@@ -863,10 +853,10 @@ module.exports = SuperJS.Class.extend({
 
       //update the response object
       .then(function(response) {
-        self.setResponse(response, res);
+        return self.setResponse(response, res);
       })
 
-      //emit afterAction events for secondary procedures
+      //emit afterAction events for secondary operations
       .then(function() {
         self.controllers[req.controller].emit('afterAction', req, res.response);
         self.controllers[req.controller].emit('after'+req.action.substr(0,1).toUpperCase()+req.action.substr(1,req.action.length-1), req);

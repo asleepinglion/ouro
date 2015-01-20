@@ -1,6 +1,7 @@
 "use strict";
 
 var SuperJS = require('../../index');
+
 var Promise = require('bluebird');
 var path = require('path');
 
@@ -31,106 +32,76 @@ module.exports = SuperJS.Class.extend({
 
   },
 
-  //execute tranforms sequentially
-  transform: function(req) {
+  //verify the request by transforming, validating, and sanitizing parameters
+  verify: function(req) {
 
-    //maintain reference to instance
+    //maintain reference to the currrent instance
     var self = this;
 
-    //return promise
-    return new Promise(function(resolve, reject) {
+    //return promise which is resolved or rejected depending on completion
+    return new Promise(function (resolve, reject) {
 
+      //maintain context object of parameters
+      var parameters = {};
+
+      //maintain list of closures which contain promises for each process
       var transforms = [];
-
-      //loop through all the parameters for this action
-      for( var param in self.blueprint.actions[req.action].params ) {
-
-        //loop through transforms for each parameter
-        for( var transform in self.blueprint.actions[req.action].params[param].transform ) {
-
-          self.app.log.debug('executing "' + transform + '" transform on:',param);
-
-          //execute transform & reject on error)
-          transforms.push(self.app.services.transform[transform](req,param));
-
-        }
-      }
-
-      //TODO: use 'each' instead to ensure sequential execution?
-      Promise.all(transforms)
-        .then(function(){
-          resolve();
-        })
-        .catch(function(err) {
-          reject();
-        });
-
-    });
-  },
-
-  //execute validations in parallel
-  validate: function(req) {
-
-    //return promise
-    return new Promise(function(resolve, reject) {
-
       var validations = [];
-
-      //loop through all the parameters for this action
-      for( var param in self.blueprint.actions[req.action].params ) {
-
-        //loop through transforms for each parameter
-        for( var validation in self.blueprint.actions[req.action].params[param].validate ) {
-
-          self.app.log.debug('executing "' + validation + '" validation on:',param);
-
-          //execute transform & reject on error)
-          validations.push(self.app.services.validate[validate](req,param));
-
-        }
-      }
-
-      Promise.all(validations)
-        .then(function(){
-          resolve();
-        })
-        .catch(function(err) {
-          reject();
-        });
-    });
-  },
-
-  //TODO: execute sanitizations in parallel
-  sanitize: function(req) {
-
-    //return promise
-    return new Promise(function(resolve, reject) {
-
       var sanitizations = [];
 
-      //loop through all the parameters for this action
-      for( var param in self.blueprint.actions[req.action].params ) {
+      //loop through all the parameters for this action and
+      //append transforms, validations, and sanitizations to their respective lists
+      for (var param in self.blueprint.actions[req.action].params) {
 
-        //loop through transforms for each parameter
-        for( var sanitization in self.blueprint.actions[req.action].params[param].sanitize ) {
+        //store the parameters value
+        parameters[param] = req.param(param);
 
-          self.app.log.debug('executing "' + sanitization + '" sanitization on:',param);
+        //setup transforms
+        transforms = transforms.concat(self.app.services.transform.setup(self.blueprint.actions[req.action].params[param].transform, parameters, param));
 
-          //execute transform & reject on error)
-          sanitizations.push(self.app.services.sanitize[sanitization](req,param));
+        //setup validations
+        validations = validations.concat(self.app.services.validate.setup(self.blueprint.actions[req.action].params[param].validate, param, parameters[param]));
 
-        }
+        //setup sanitizations
+        //sanitizations = sanitizations.concat(self.app.services.sanitize.setup(self.blueprint.actions[req.action].params[param].sanitize, parameters, param));
+
       }
 
-      Promise.all(sanitizations)
-        .then(function(){
+      self.app.log.debug("performing " + transforms.length + " transforms, " + validations.length + " validations, and " + sanitizations.length + " sanitizations...");
+
+      //exceute transforms
+      self.app.services.transform.process(transforms)
+
+        //execute validations
+        .then(function() {
+          return self.app.services.validate.process(validations);
+        })
+
+        //exectute sanitizations
+        //.then(function() {
+        //  return self.services.sanitize.process(sanitizations)
+        //})
+
+        //resolve if all passed without errors
+        .then(function() {
+
+          //store the parameters on the request object
+          req.parameters = parameters;
+
+          self.app.log.debug('verified parameters:', parameters);
+
           resolve();
         })
+
+        //reject if we caught any errors
         .catch(function(err) {
-          reject();
+          reject(err);
         });
+
     });
+
   },
+
 
   //can be overridden by the controller extension to manipulate the request or response
   afterAction: function(req, response, next) {

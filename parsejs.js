@@ -48,4 +48,3 @@ ast.body.map(function(node) {
   }
 
 });
-
