@@ -33,7 +33,7 @@ module.exports = SuperJS.Class.extend({
   },
 
   //verify the request by transforming, validating, and sanitizing parameters
-  verify: function(req) {
+  verifyRequest: function(req) {
 
     //maintain reference to the currrent instance
     var self = this;
@@ -87,7 +87,6 @@ module.exports = SuperJS.Class.extend({
 
           //store the parameters on the request object
           req.parameters = parameters;
-
           self.app.log.debug('verified parameters:', parameters);
 
           resolve();
@@ -95,6 +94,7 @@ module.exports = SuperJS.Class.extend({
 
         //reject if we caught any errors
         .catch(function(err) {
+
           reject(err);
         });
 

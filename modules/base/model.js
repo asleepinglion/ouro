@@ -22,6 +22,8 @@ module.exports = SuperJS.Class.extend({
 
   validate: function(req) {
 
+    /*
+
     //maintain reference to the instance
     var self = this;
 
@@ -67,6 +69,7 @@ module.exports = SuperJS.Class.extend({
           reject();
         });
     });
+    */
 
   },
 

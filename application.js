@@ -70,10 +70,11 @@ module.exports = SuperJS.Class.extend({
     this.loadMiddleware();
     this.loadServices();
     this.loadControllers();
+    this.initConnections();
     this.buildMethodMap();
     this.loadBlueprints();
-    this.initConnections();
 
+    console.log(this.models);
   },
 
   //print superjs emblem to standard output
@@ -476,7 +477,6 @@ module.exports = SuperJS.Class.extend({
       }
     }
 
-
     //loop through actions for this blueprint
     for( var action in blueprint.actions ) {
 
@@ -511,25 +511,30 @@ module.exports = SuperJS.Class.extend({
             }
           }
         } else {
-          this.log.warn('blueprint missing transform:',controllerName + "." + action + "." + param);
+          this.log.warn('blueprint missing transform object:',controllerName + "." + action + "." + param);
           blueprint.actions[action].params[param].transform = {};
         }
 
-        //if validations have been specified for this parameter
-        if( blueprint.actions[action].params[param].validate ) {
-
-          //loop through each transform
-          for( var validation in blueprint.actions[action].params[param].validate ) {
-
-            //warn & remove any transforms, validations, or sanitizations that don't exist
-            if( !this.services.validate[validation] ) {
-
-              this.log.warn('validation missing:',{validation: validation, controller: controllerName, parameter: param});
-              delete blueprint.actions[action].params[param].validate[validation];
-            }
-          }
-        } else {
+        //if validations are missing set up an empty object
+        if( !blueprint.actions[action].params[param].validate ) {
+          this.log.warn('blueprint missing validate object:',controllerName + "." + action + "." + param);
           blueprint.actions[action].params[param].validate = {};
+        }
+
+        //if type has been specified, add it as an actual validation
+        if( blueprint.actions[action].params[param].type ) {
+          blueprint.actions[action].params[param].validate[blueprint.actions[action].params[param].type] = true;
+        }
+
+        //loop through each transform
+        for( var validation in blueprint.actions[action].params[param].validate ) {
+
+          //warn & remove any transforms, validations, or sanitizations that don't exist
+          if( !this.services.validate[validation]) {
+
+            this.log.warn('validation missing:',{validation: validation, controller: controllerName, parameter: param});
+            delete blueprint.actions[action].params[param].validate[validation];
+          }
         }
 
         //if sanitzations have been specified for this parameter
@@ -545,8 +550,48 @@ module.exports = SuperJS.Class.extend({
               delete blueprint.actions[action].params[param].sanitize[sanitization];
             }
           }
+
         } else {
+          this.log.warn('blueprint missing sanitize object:',controllerName + "." + action + "." + param);
           blueprint.actions[action].params[param].sanitize = {};
+        }
+
+        //if this parameter has specified a model load the model's validations & sanitizations
+        if( blueprint.actions[action].params[param].model ) {
+
+          //if the model option is set to true, apply the related models' validations rules
+          if( blueprint.actions[action].params[param].model === true ) {
+
+            //if this controller has an associated model and the model's attributes have been defined
+            if( this.models[controllerName] && this.models[controllerName].model ) {
+              if( this.models[controllerName].model.attributes ) {
+                console.log('blueprint parameter, model enabled.');
+
+                //setup default model object on param
+                blueprint.actions[action].params[param].model = {};
+                blueprint.actions[action].params[param].model.validate = {};
+                blueprint.actions[action].params[param].model.sanitize = {};
+
+                //loop through the model's attributes
+                for (var attributeName in this.models[controllerName].model.attributes) {
+
+                  var attribute = this.models[controllerName].model.attributes[attributeName];
+
+                  //if validations have been assigned to this attribute, set them up on the param's model
+                  if( attribute.validate ) {
+                    blueprint.actions[action].params[param].model.validate[attributeName] = attribute.validate;
+                  }
+
+                  //if sanitizations have been assigned to this attribute, set them up on the param's model
+                  if( attribute.sanitize ) {
+                    blueprint.actions[action].params[param].model.sanitize[attributeName] = attribute.sanitize;
+                  }
+
+                }
+              }
+            }
+          }
+
         }
       }
     }
@@ -638,13 +683,27 @@ module.exports = SuperJS.Class.extend({
           self.log.object(err.stack);
         }
 
+        //delete internal error variables
+        delete err.__stackCleaned__;
+
+        //remove stack traces from response object unless option is enabled
         if( !self.config.server.stackTraces ) {
           delete err.stack;
         }
 
         self.log.break();
 
-        self.setResponse({meta:{success: false}, error:err}, res, err.status);
+        var response = {meta:{success: false}};
+
+        //move status out to the meta section
+        if( err.status ) {
+          response.meta.status = err.status;
+          delete err.status;
+        }
+
+        response.error = err;
+
+        self.setResponse(response, res, err.status);
         self.sendResponse(req,res);
 
       });
@@ -830,8 +889,8 @@ module.exports = SuperJS.Class.extend({
 
       //verify the request by transforming, validating, and sanitizing parameters
       .then(function() {
-        if( self.controllers[req.controller].verify ) {
-          return self.controllers[req.controller].verify(req);
+        if( self.controllers[req.controller].verifyRequest ) {
+          return self.controllers[req.controller].verifyRequest(req);
         }
       })
 
