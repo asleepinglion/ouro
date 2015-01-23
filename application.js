@@ -73,8 +73,6 @@ module.exports = SuperJS.Class.extend({
     this.initConnections();
     this.buildMethodMap();
     this.loadBlueprints();
-
-    console.log(this.models);
   },
 
   //print superjs emblem to standard output
@@ -359,6 +357,29 @@ module.exports = SuperJS.Class.extend({
 
   },
 
+  //initialize database engine
+  initConnections: function() {
+
+    //make sure an engine has been specified
+    if( _.isEmpty(this.config.data.engine) ) {
+      console.error('You must specify an engine to use, e.g.: rethink, waterline etc.');
+      process.exit();
+    }
+
+    //make sure the node module is present
+    if( !fs.existsSync(this.appPath+'/node_modules/superjs-'+this.config.data.engine) ) {
+      console.error('The engine you specified was not found, make sure you have installed the package: npm install superjs-rethink');
+      process.exit();
+    }
+
+    //load the engine module
+    this.engine = require(this.appPath+'/node_modules/superjs-'+this.config.data.engine);
+
+    //initialize the engine
+    var initializer = new this.engine.Initializer(this);
+
+  },
+
   //build controller method maps
   buildMethodMap: function() {
 
@@ -464,7 +485,7 @@ module.exports = SuperJS.Class.extend({
 
     //make sure the actions object exists on the blueprint
     if( !blueprint.actions  ) {
-      this.log.warn('blueprint missing actions object:', {controller: controllerName});
+      this.log.warn('controller configruation missing actions object:', {controller: controllerName});
       blueprint.actions = {};
     }
 
@@ -472,7 +493,7 @@ module.exports = SuperJS.Class.extend({
     for( var method in this.externalMethods[controllerName] ) {
 
       if( !blueprint.actions[method] ) {
-        this.log.warn('blueprint missing action:', {controller: controllerName, action: method});
+        this.log.warn('controller configruation missing action:', {controller: controllerName, action: method});
         blueprint.actions[method] = {params: {}};
       }
     }
@@ -511,13 +532,13 @@ module.exports = SuperJS.Class.extend({
             }
           }
         } else {
-          this.log.warn('blueprint missing transform object:',controllerName + "." + action + "." + param);
+          this.log.warn('controller missing transform object:',controllerName + "." + action + "." + param);
           blueprint.actions[action].params[param].transform = {};
         }
 
         //if validations are missing set up an empty object
         if( !blueprint.actions[action].params[param].validate ) {
-          this.log.warn('blueprint missing validate object:',controllerName + "." + action + "." + param);
+          this.log.warn('controller missing validate object:',controllerName + "." + action + "." + param);
           blueprint.actions[action].params[param].validate = {};
         }
 
@@ -552,9 +573,10 @@ module.exports = SuperJS.Class.extend({
           }
 
         } else {
-          this.log.warn('blueprint missing sanitize object:',controllerName + "." + action + "." + param);
+          this.log.warn('controller missing sanitize object:',controllerName + "." + action + "." + param);
           blueprint.actions[action].params[param].sanitize = {};
         }
+
 
         //if this parameter has specified a model load the model's validations & sanitizations
         if( blueprint.actions[action].params[param].model ) {
@@ -563,9 +585,8 @@ module.exports = SuperJS.Class.extend({
           if( blueprint.actions[action].params[param].model === true ) {
 
             //if this controller has an associated model and the model's attributes have been defined
-            if( this.models[controllerName] && this.models[controllerName].model ) {
-              if( this.models[controllerName].model.attributes ) {
-                console.log('blueprint parameter, model enabled.');
+            if( this.models[controllerName] && this.models[controllerName] ) {
+              if( this.models[controllerName].attributes ) {
 
                 //setup default model object on param
                 blueprint.actions[action].params[param].model = {};
@@ -573,9 +594,9 @@ module.exports = SuperJS.Class.extend({
                 blueprint.actions[action].params[param].model.sanitize = {};
 
                 //loop through the model's attributes
-                for (var attributeName in this.models[controllerName].model.attributes) {
+                for (var attributeName in this.models[controllerName].attributes) {
 
-                  var attribute = this.models[controllerName].model.attributes[attributeName];
+                  var attribute = this.models[controllerName].attributes[attributeName];
 
                   //if validations have been assigned to this attribute, set them up on the param's model
                   if( attribute.validate ) {
@@ -590,6 +611,56 @@ module.exports = SuperJS.Class.extend({
                 }
               }
             }
+
+          } else if( (typeof blueprint.actions[action].params[param].model) === 'object' ) {
+
+            //if this controller has an associated model and the model's attributes have been defined
+            if( this.models[controllerName] && this.models[controllerName] ) {
+              if( this.models[controllerName].attributes ) {
+
+                //make sure we have a validate object on the parameter
+                if( !blueprint.actions[action].params[param].model.validate ) {
+                  blueprint.actions[action].params[param].model.validate = {};
+                }
+
+                //make sure we have a sanitize object on the parameter
+                if( !blueprint.actions[action].params[param].model.sanitize ) {
+                  blueprint.actions[action].params[param].model.sanitize = {};
+                }
+
+                //loop through the model's attributes
+                for (var attributeName in this.models[controllerName].attributes) {
+
+                  var attribute = this.models[controllerName].attributes[attributeName];
+
+                  //if validations have been assigned to this attribute, set them up on the param's model
+                  if( attribute.validate ) {
+                    if( blueprint.actions[action].params[param].model.validate[attributeName] ) {
+                      //this.log.debug('merging existing validation blueprint for ' + attributeName + ":",blueprint.actions[action].params[param].model.validate[attributeName]);
+                      //this.log.debug('with the attribute validations: ',attribute.validate);
+                      blueprint.actions[action].params[param].model.validate[attributeName] = merge(blueprint.actions[action].params[param].model.validate[attributeName], attribute.validate);
+                    } else {
+                      //this.log.debug('setting the validation blueprint for ' + attributeName + ":",attribute.validate);
+                      blueprint.actions[action].params[param].model.validate[attributeName] = attribute.validate;
+                    }
+                  }
+
+                  //if sanitizations have been assigned to this attribute, set them up on the param's model
+                  if( attribute.sanitize ) {
+                    if( blueprint.actions[action].params[param].model.sanitize[attributeName] ) {
+                      blueprint.actions[action].params[param].model.sanitize[attributeName] = merge(blueprint.actions[action].params[param].model.sanitize[attributeName], attribute.sanitize);
+                    } else {
+                      blueprint.actions[action].params[param].model.sanitize[attributeName] = attribute.sanitize;
+                    }
+                  }
+
+                }
+
+                //this.log.debug('final:',blueprint.actions[action].params[param].model);
+
+              }
+            }
+
           }
 
         }
@@ -598,29 +669,6 @@ module.exports = SuperJS.Class.extend({
 
     //this.log.debug('blueprint loaded for '+controllerName+':',blueprint);
     //this.log.debug('external methods:',this.externalMethods);
-  },
-
-  //initialize database engine
-  initConnections: function() {
-
-    //make sure an engine has been specified
-    if( _.isEmpty(this.config.data.engine) ) {
-      console.error('You must specify an engine to use, e.g.: rethink, waterline etc.');
-      process.exit();
-    }
-
-    //make sure the node module is present
-    if( !fs.existsSync(this.appPath+'/node_modules/superjs-'+this.config.data.engine) ) {
-      console.error('The engine you specified was not found, make sure you have installed the package: npm install superjs-rethink');
-      process.exit();
-    }
-
-    //load the engine module
-    this.engine = require(this.appPath+'/node_modules/superjs-'+this.config.data.engine);
-
-    //initialize the engine
-    var initializer = new this.engine.Initializer(this);
-
   },
 
   //initialize the response object
@@ -680,8 +728,9 @@ module.exports = SuperJS.Class.extend({
 
         if (err.stack) {
           err.stack = err.stack.split('\n');
-          self.log.object(err.stack);
         }
+
+        self.log.object(err);
 
         //delete internal error variables
         delete err.__stackCleaned__;
@@ -896,7 +945,6 @@ module.exports = SuperJS.Class.extend({
 
       //execute the requested action
       .then(function() {
-        self.log.debug('executing action:',self.externalMethods[req.controller][req.action]._method);
         return self.controllers[req.controller][self.externalMethods[req.controller][req.action]._method](req);
       })
 
