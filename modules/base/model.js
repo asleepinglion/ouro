@@ -18,63 +18,62 @@ module.exports = SuperJS.Class.extend({
 
     //maintain a reference to the app
     this.app = app;
+
+    //maintain a reference to the log engine
+    this.log = app.log;
+
+    //check the configuration for issues
+    this.processConfiguration();
+  },
+
+  processConfiguration: function() {
+
+    if( this.attributes ) {
+
+      for( var attribute in this.attributes ) {
+
+        if( !this.attributes[attribute].validate ) {
+          this.attributes[attribute].validate = {};
+        }
+
+        if( !this.attributes[attribute].sanitize ) {
+          this.attributes[attribute].sanitize = {};
+        }
+
+        if( this.attributes[attribute].type ) {
+          this.attributes[attribute].validate[this.attributes[attribute].type] = true;
+        }
+
+        //warn & remove any missing validations
+        for( var validation in this.attributes[attribute].validate ) {
+          if( !this.app.services.validate[validation] ) {
+            this.log.warn('validation missing:',validation);
+            delete this.attributes[attribute].validate[validation];
+          }
+        }
+
+        //warn & remove any missing sanitizations
+        for( var sanitization in this.attributes[attribute].sanitize ) {
+          if( !this.app.services.sanitize[sanitization] ) {
+            this.log.warn('sanitization missing:',sanitization);
+            delete this.attributes[attribute].sanitize[sanitization];
+          }
+        }
+
+      }
+
+    } else {
+
+      this.log.warn('model missing attributes object...');
+
+    }
+
   },
 
   validate: function(req) {
-
-    /*
-
-    //maintain reference to the instance
-    var self = this;
-
-    //return promise
-    return new Promise(function(resolve, reject) {
-
-      var validations = [];
-
-      //loop through all the parameters for this action
-      for( var attribute in self.attributes ) {
-
-        //loop through transforms for each parameter
-        for( var validation in self.blueprint.actions[req.action].params[param].validate ) {
-
-          self.app.log.debug('executing "' + validation + '" validation on:',param);
-
-          var validation = self.app.services.validate[validate];
-          var options = self.blueprint.actions[req.action].params[param].validate[validation];
-          var value = req.params(param);
-
-          //todo: load the blueprints for services
-          //var rule = self.app.services.validate.blueprint[validate].rule;
-
-          //execute transform & reject on error)
-          validations.push(function() {
-            return new Promise(function(resolve,reject) {
-              if( validation.apply(null, value, options) ) {
-                resolve();
-              } else {
-                reject(new SuperJS.Error('validation_error', 422, 'A validation error occured.'));
-              }
-            });
-          });
-
-        }
-      }
-
-      Promise.all(validations)
-        .then(function(){
-          resolve();
-        })
-        .catch(function(err) {
-          reject();
-        });
-    });
-    */
-
   },
 
   sanitize: function(req) {
-
   }
 
 });
