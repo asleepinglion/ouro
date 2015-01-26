@@ -717,22 +717,27 @@ module.exports = SuperJS.Class.extend({
       //handle any errors
       .catch(function(err) {
 
+        //todo: make RequestErrror instead of SuperJS error
+        //if super js error, the request has failed
         if( err instanceof SuperJS.Error ) {
           self.log.warn('request failed:', {code: err.code, message: err.message});
-        } else {
 
+        //else, an unknown error has occurred
+        } else {
           err = new SuperJS.Error('unknown_error', 500, 'An unknown error occured processing the request.', err);
           self.log.error('error occured:', {code: err.code, message: err.message });
 
         }
 
-        if (err.stack) {
-          err.stack = err.stack.split('\n');
+        //make the error stack easier to read
+        if (typeof err.stack === 'string') {
+            err.stack = err.stack.split('\n');
         }
 
+        //output the error object to the console
         self.log.object(err);
 
-        //delete internal error variables
+        //delete extra error object variables
         delete err.__stackCleaned__;
 
         //remove stack traces from response object unless option is enabled
@@ -742,17 +747,22 @@ module.exports = SuperJS.Class.extend({
 
         self.log.break();
 
+        //prepare response object
         var response = {meta:{success: false}};
 
-        //move status out to the meta section
+        //move err.status out to the meta section
         if( err.status ) {
           response.meta.status = err.status;
           delete err.status;
         }
 
+        //store the error on the response object
         response.error = err;
 
-        self.setResponse(response, res, err.status);
+        //merge changes onto the existing response object
+        self.setResponse(response, res, response.meta.status);
+
+        //send the response to the user
         self.sendResponse(req,res);
 
       });
