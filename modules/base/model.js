@@ -22,8 +22,6 @@ module.exports = SuperJS.Class.extend({
     //maintain a reference to the log engine
     this.log = app.log;
 
-    //check the configuration for issues
-    this.processConfiguration();
   },
 
   processConfiguration: function() {
@@ -47,7 +45,7 @@ module.exports = SuperJS.Class.extend({
         //warn & remove any missing validations
         for( var validation in this.attributes[attribute].validate ) {
           if( !this.app.services.validate[validation] ) {
-            this.log.warn('validation missing:',validation);
+            this.log.warn('validation missing:',{validation: validation, model: this.name});
             delete this.attributes[attribute].validate[validation];
           }
         }
