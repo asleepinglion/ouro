@@ -35,7 +35,6 @@ module.exports = SuperJS.Class.extend({
   //verify the request by transforming, validating, and sanitizing parameters
   verifyRequest: function(req) {
 
-
     //maintain reference to the currrent instance
     var self = this;
 
@@ -93,7 +92,8 @@ module.exports = SuperJS.Class.extend({
         }
       }
 
-      self.app.log.debug("performing " + transforms.length + " transforms, " + validations.length + " validations, and " + sanitizations.length + " sanitizations...");
+      var numberOfValidations = validations.length + modelValidations.length;
+      self.app.log.debug("performing " + transforms.length + " transforms, " + numberOfValidations + " validations, and " + sanitizations.length + " sanitizations...");
 
       //exceute transforms
       self.app.services.transform.process(transforms)
