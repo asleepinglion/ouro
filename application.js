@@ -778,9 +778,6 @@ module.exports = SuperJS.Class.extend({
             err.stack = err.stack.split('\n');
         }
 
-        //output the error object to the console
-        self.log.object(err);
-
         //delete extra error object variables
         delete err.__stackCleaned__;
 
@@ -788,6 +785,9 @@ module.exports = SuperJS.Class.extend({
         if( !self.config.server.stackTraces ) {
           delete err.stack;
         }
+
+        //output the error object to the console
+        self.log.object(err);
 
         self.log.break();
 
