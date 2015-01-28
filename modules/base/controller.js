@@ -78,6 +78,7 @@ module.exports = SuperJS.Class.extend({
             parameters[param] = {};
           }
 
+          //loop through model validations
           for( var attribute in self.blueprint.actions[req.action].params[param].model.validate ) {
 
             //set attribute value to default if its not passed
@@ -85,7 +86,10 @@ module.exports = SuperJS.Class.extend({
               parameters[param][attribute] = self.app.models[self.name].attributes[attribute].defaultsTo;
             }
 
-            modelValidations = modelValidations.concat(self.app.services.validate.setup(self.blueprint.actions[req.action].params[param].model.validate[attribute], attribute, parameters[param][attribute], 'attribute'));
+            //don't run validations if the attribute has not been provided and its not required
+            if( self.blueprint.actions[req.action].params[param].model.validate[attribute].required === true || typeof parameters[param][attribute] !== 'undefined' ) {
+              modelValidations = modelValidations.concat(self.app.services.validate.setup(self.blueprint.actions[req.action].params[param].model.validate[attribute], attribute, parameters[param][attribute], 'attribute'));
+            }
 
           }
 
