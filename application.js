@@ -525,35 +525,43 @@ module.exports = SuperJS.Class.extend({
 
             //warn & remove any transforms, validations, or sanitizations that don't exist
             if( !this.services.transform[transform] ) {
-
               this.log.warn('transform missing:',{transform: transform, controller: controllerName, parameter: param});
               delete blueprint.actions[action].params[param].transform[transform];
-
             }
+
+            //remove disabled transforms
+            if( blueprint.actions[action].params[param].transform[transform] === false ) {
+              delete blueprint.actions[action].params[param].transform[transform];
+            }
+
           }
         } else {
           this.log.warn('controller missing transform object:',controllerName + "." + action + "." + param);
           blueprint.actions[action].params[param].transform = {};
         }
 
-        //if validations are missing set up an empty object
+        //if validations are missing on the parameter set up an empty object
         if( !blueprint.actions[action].params[param].validate ) {
           this.log.warn('controller missing validate object:',controllerName + "." + action + "." + param);
           blueprint.actions[action].params[param].validate = {};
         }
 
-        //if type has been specified, add it as an actual validation
+        //if type has been specified on the parameter, add it as an actual validation
         if( blueprint.actions[action].params[param].type ) {
           blueprint.actions[action].params[param].validate[blueprint.actions[action].params[param].type] = true;
         }
 
-        //loop through each transform
+        //loop through each validation
         for( var validation in blueprint.actions[action].params[param].validate ) {
 
           //warn & remove any transforms, validations, or sanitizations that don't exist
           if( !this.services.validate[validation]) {
-
             this.log.warn('validation missing:',{validation: validation, controller: controllerName, parameter: param});
+            delete blueprint.actions[action].params[param].validate[validation];
+          }
+
+          //remove disabled validations
+          if( blueprint.actions[action].params[param].validate[validation] === false ) {
             delete blueprint.actions[action].params[param].validate[validation];
           }
         }
@@ -566,8 +574,12 @@ module.exports = SuperJS.Class.extend({
 
             //warn & remove any transforms, validations, or sanitizations that don't exist
             if( !this.services.sanitize[sanitization] ) {
-
               this.log.warn('sanitization missing:',{sanitization: sanitization, controller: controllerName, parameter: param});
+              delete blueprint.actions[action].params[param].sanitize[sanitization];
+            }
+
+            //remove disabled sanitizations
+            if( blueprint.actions[action].params[param].sanitize[sanitization] === false ) {
               delete blueprint.actions[action].params[param].sanitize[sanitization];
             }
           }
@@ -606,6 +618,22 @@ module.exports = SuperJS.Class.extend({
                   //if sanitizations have been assigned to this attribute, set them up on the param's model
                   if( attribute.sanitize ) {
                     blueprint.actions[action].params[param].model.sanitize[attributeName] = attribute.sanitize;
+                  }
+
+                  for( var validation in blueprint.actions[action].params[param].model.validate[attributeName] ) {
+
+                    //remove disabled validations
+                    if( blueprint.actions[action].params[param].model.validate[attributeName][validation] === false ) {
+                      delete blueprint.actions[action].params[param].model.validate[attributeName][validation];
+                    }
+                  }
+
+                  for( var sanitization in blueprint.actions[action].params[param].model.sanitize[attributeName] ) {
+
+                    //remove disabled sanitizations
+                    if( blueprint.actions[action].params[param].model.sanitize[attributeName][sanitization] === false ) {
+                      delete blueprint.actions[action].params[param].model.sanitize[attributeName][sanitization];
+                    }
                   }
 
                 }
@@ -651,6 +679,22 @@ module.exports = SuperJS.Class.extend({
                       blueprint.actions[action].params[param].model.sanitize[attributeName] = merge(blueprint.actions[action].params[param].model.sanitize[attributeName], attribute.sanitize);
                     } else {
                       blueprint.actions[action].params[param].model.sanitize[attributeName] = attribute.sanitize;
+                    }
+                  }
+
+                  for( var validation in blueprint.actions[action].params[param].model.validate[attributeName] ) {
+
+                    //remove disabled validations
+                    if( blueprint.actions[action].params[param].model.validate[attributeName][validation] === false ) {
+                      delete blueprint.actions[action].params[param].model.validate[attributeName][validation];
+                    }
+                  }
+
+                  for( var sanitization in blueprint.actions[action].params[param].model.sanitize[attributeName] ) {
+
+                    //remove disabled sanitizations
+                    if( blueprint.actions[action].params[param].model.sanitize[attributeName][sanitization] === false ) {
+                      delete blueprint.actions[action].params[param].model.sanitize[attributeName][sanitization];
                     }
                   }
 
