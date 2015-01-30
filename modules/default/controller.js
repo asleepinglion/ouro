@@ -64,7 +64,7 @@ module.exports = SuperJS.Controller.extend({
 
           } else {
 
-            for( var action in response.controllers[controller] ) {
+            for( var action in response.controllers[controller].actions ) {
 
               //remove internal method names
               delete response.controllers[controller].actions[action]._method;
