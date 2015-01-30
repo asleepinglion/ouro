@@ -442,6 +442,8 @@ module.exports = SuperJS.Class.extend({
   //load blueprint and its descendents
   loadBlueprint: function(controllerName, blueprints, blueprintPath) {
 
+    this.log.debug('attempting to load blueprint:',blueprintPath);
+
     //maintain a list of loaded blueprints at each depth
     blueprints = (blueprints) ? blueprints : [];
 
@@ -455,6 +457,8 @@ module.exports = SuperJS.Class.extend({
     //see if the blueprint actually exists at the given path
     if (fs.existsSync(blueprintPath + '/blueprint.js')) {
 
+      this.log.debug('loaded blueprint:',blueprintPath);
+
       //load the blueprint
       var loadedBlueprint = require(blueprintPath + '/blueprint');
 
@@ -465,13 +469,14 @@ module.exports = SuperJS.Class.extend({
       if( loadedBlueprint.extends ) {
         return this.loadBlueprint(controllerName, blueprints);
       }
+
+      this.processBlueprint(controllerName, blueprints);
     }
 
-    this.processBlueprint(controllerName, blueprints);
   },
 
   //deep merge controller blueprint so they inherit from parent blueprints
-  processBlueprint: function(controllerName, blueprints) {
+  processBlueprint: function(controllerName, blueprints)  {
 
     //setup blueprint on the controller
     this.controllers[controllerName].blueprint = {};
@@ -778,8 +783,9 @@ module.exports = SuperJS.Class.extend({
             err.stack = err.stack.split('\n');
         }
 
-        //delete extra error object variables
+        //delete extra bluebird error object variables
         delete err.__stackCleaned__;
+        delete err.isOperational;
 
         //remove stack traces from response object unless option is enabled
         if( !self.config.server.stackTraces ) {
