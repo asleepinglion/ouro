@@ -15,37 +15,37 @@ module.exports = {
 
   options: {
 
+    waterline: {
+      aliases: ['w']
+    },
+
     dbEngine: {
-
-      aliases: ['db'],
+      aliases: ['e'],
       description: 'The database engine lets you use any database backend or orm you desire.',
-      params: {
-
-        mode: {
-          validate: {
-            in: ['waterline', 'thinky'],
-            defaultsTo: ''
-          }
-        }
-
+      default: 'waterline',
+      validate: {
+        in: ['waterline', 'thinky']
       }
-    }
-
-  },
-
-  params: {
+    },
 
     type: {
+      aliases: ['t'],
       description: 'The type of object you wish to create.',
       type: 'string',
-      in: ['project', 'resource', 'controller', 'model', 'method', 'action'],
-      required: true
+      validate: {
+        in: ['project', 'resource', 'controller', 'model', 'method', 'action'],
+        required: true
+      }
     },
 
     name: {
+      aliases: ['n'],
       description: 'The name of the object you wish to create.',
       type: 'string',
-      required: true
+      validate: {
+        required: true
+      }
     }
   }
+
 };

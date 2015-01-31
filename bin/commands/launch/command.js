@@ -12,9 +12,6 @@ var colors = require('colors');
 
 module.exports = SuperJS.Command.extend({
 
-  run: function(mode) {
-
-  }
 
 });
 

@@ -1,10 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * @module API
- * @submodule CLI
- */
-
 "use strict";
 
 var SuperJS = require('../index');

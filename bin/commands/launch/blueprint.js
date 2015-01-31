@@ -13,7 +13,7 @@ module.exports = {
 
   aliases: ['lift','start'],
 
-  flags: {
+  options: {
 
     snapshot: {
       description: 'Record snapshots of requests & responses.',
@@ -23,28 +23,20 @@ module.exports = {
     watch: {
       aliases: ['w'],
       description: 'Watch files for changes and either reload or rebuild project.',
-
-      params: {
-
-        mode: {
-          description: 'The mode determines what happens when changes are detected.',
-          in: ['reload', 'rebuild'],
-          defaultsTo: 'reload'
-        }
-
+      default: 'reload',
+      validate: {
+        in: ['reload', 'rebuild']
       }
-    }
-  },
-
-  params: {
+    },
 
     mode: {
-      description: 'The type of object you wish to create.',
+      description: 'The server mode affects how the server behaves for varioius parts of the lifecycle.',
       type: 'string',
-      defaultsTo: 'dev',
-      in: ['dev', 'development', 'beta', 'staging', 'prod', 'production']
+      default: 'dev',
+      validate: {
+        in: ['dev', 'development', 'beta', 'staging', 'prod', 'production']
+      }
     }
-
   }
 
 };

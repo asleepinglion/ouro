@@ -13,7 +13,7 @@ module.exports = {
 
   default: true,
 
-  params: {
+  options: {
 
     command: {
       description: 'The command for which you want more information.',

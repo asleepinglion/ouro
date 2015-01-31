@@ -12,8 +12,16 @@ var colors = require('colors');
 
 module.exports = SuperJS.Command.extend({
 
-  run: function(type, name) {
+  run: function() {
 
+    //maintain reference to instance
+    var self = this;
+
+    return new Promise(function(resolve, reject) {
+
+      self.log.debug('generating:', self.app.request.options.type);
+
+    });
   },
 
   createResource: function(name) {
@@ -27,9 +35,7 @@ module.exports = SuperJS.Command.extend({
 
   createModel: function(name) {
 
-  },
-
-
+  }
 
 });
 
