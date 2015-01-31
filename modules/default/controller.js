@@ -72,6 +72,30 @@ module.exports = SuperJS.Controller.extend({
               //remove the parameters from the response if disabled
               if( req.parameters.params === false ) {
                 delete response.controllers[controller].actions[action].params;
+              } else {
+
+                for( var param in response.controllers[controller].actions[action].params ) {
+
+                  //remove the parameters from the response if disabled
+                  if( req.parameters.transforms === false ) {
+                    delete response.controllers[controller].actions[action].params[param].transform;
+                  }
+
+                  //remove the parameters from the response if disabled
+                  if( req.parameters.validations === false ) {
+                    delete response.controllers[controller].actions[action].params[param].validate;
+                  }
+
+                  //remove the parameters from the response if disabled
+                  if( req.parameters.sanitizations === false ) {
+                    delete response.controllers[controller].actions[action].params[param].sanitize;
+                  }
+
+                  if( req.parameters.models === false && typeof response.controllers[controller].actions[action].params[param].model === 'object' ) {
+                    response.controllers[controller].actions[action].params[param].model = true;
+                  }
+                }
+
               }
 
             }
