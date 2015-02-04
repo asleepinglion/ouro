@@ -53,7 +53,7 @@ module.exports = SuperJS.Class.extend({
         //warn & remove any missing sanitizations
         for( var sanitization in this.attributes[attribute].sanitize ) {
           if( !this.app.services.sanitize[sanitization] ) {
-            this.log.warn('sanitization missing:',sanitization);
+            this.log.warn('sanitization missing:',{sanitization: sanitization, model: this.name});
             delete this.attributes[attribute].sanitize[sanitization];
           }
         }
