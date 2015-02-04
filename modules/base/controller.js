@@ -58,7 +58,7 @@ module.exports = SuperJS.Class.extend({
         parameters[param] = req.param(param);
 
         //set value to default if its not passed
-        if( !parameters[param] ) {
+        if( typeof parameters[param] === 'undefined' ) {
           parameters[param] = self.blueprint.actions[req.action].params[param].default;
         }
 
