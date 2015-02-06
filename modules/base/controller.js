@@ -66,7 +66,7 @@ module.exports = SuperJS.Class.extend({
         transforms = transforms.concat(self.app.services.transform.setup(self.blueprint.actions[req.action].params[param].transform, parameters, param));
 
         //setup validations
-        validations = validations.concat(self.app.services.validate.setup(self.blueprint.actions[req.action].params[param].validate, param, parameters[param], 'parameter'));
+        validations = validations.concat(self.app.services.validate.setup(self.blueprint.actions[req.action].params[param].validate, parameters, param, 'parameter'));
 
         //setup sanitizations
         //sanitizations = sanitizations.concat(self.app.services.sanitize.setup(self.blueprint.actions[req.action].params[param].sanitize, parameters, param));
