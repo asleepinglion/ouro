@@ -70,7 +70,7 @@ module.exports = SuperJS.Controller.extend({
         //loop through the loaded controllers
         for ( var model in self.app.models ) {
 
-          console.log(self.app.models[model]);
+          //console.log(self.app.models[model]);
 
           //setup the model
           response.models[model] = {};
