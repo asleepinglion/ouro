@@ -88,7 +88,7 @@ module.exports = SuperJS.Class.extend({
 
             //don't run validations if the attribute has not been provided and its not required
             if( self.blueprint.actions[req.action].params[param].model.validate[attribute].required === true || typeof parameters[param][attribute] !== 'undefined' ) {
-              modelValidations = modelValidations.concat(self.app.services.validate.setup(self.blueprint.actions[req.action].params[param].model.validate[attribute], attribute, parameters[param][attribute], 'attribute'));
+              modelValidations = modelValidations.concat(self.app.services.validate.setup(self.blueprint.actions[req.action].params[param].model.validate[attribute], parameters, attribute, parameters[param][attribute], 'attribute'));
             }
 
           }
@@ -156,10 +156,10 @@ module.exports = SuperJS.Class.extend({
   },
 
   //can be overridden by the controller extension to manipulate the request or response
-  afterAction: function(req, response, next) {
+  afterAction: function(req, response) {
 
     //return promise
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve/*, reject*/) {
       resolve({});
     });
   }
