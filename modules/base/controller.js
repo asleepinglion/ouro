@@ -81,8 +81,8 @@ module.exports = SuperJS.Class.extend({
           //loop through model validations
           for( var attribute in self.blueprint.actions[req.action].params[param].model.validate ) {
 
-            //set attribute value to default if its not passed
-            if( Object.keys(parameters[param]).indexOf(attribute) === -1 ) {
+            //set attribute value to default if its not passed and required
+            if( Object.keys(parameters[param]).indexOf(attribute) === -1 && self.blueprint.actions[req.action].params[param].model.validate[attribute].required === true ) {
               parameters[param][attribute] = self.app.models[self.name].attributes[attribute].defaultsTo;
             }
 
