@@ -17,7 +17,7 @@ module.exports = SuperJS.Class.extend({
 
   init: function(app) {
 
-    //store reference to express
+    //store reference to the application instance
     this.app = app;
 
   },
@@ -40,6 +40,8 @@ module.exports = SuperJS.Class.extend({
 
     //return promise which is resolved or rejected depending on completion
     return new Promise(function (resolve, reject) {
+
+      //self.app.log.debug('request body:', req.body);
 
       //maintain context object of parameters
       var parameters = {};
@@ -121,8 +123,7 @@ module.exports = SuperJS.Class.extend({
         }
       }
 
-      //self.app.log.debug('parameters:');
-      //self.app.log.object(parameters);
+      //self.app.log.debug('parameters:', parameters);
 
       var numberOfValidations = validations.length + modelValidations.length;
       self.app.log.debug("performing " + transforms.length + " transforms, " + numberOfValidations + " validations, and " + sanitizations.length + " sanitizations...");

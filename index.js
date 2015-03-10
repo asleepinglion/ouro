@@ -23,3 +23,4 @@ module.exports.Application = require('./lib/application.js');
 module.exports.Error = require('./lib/error.js');
 module.exports.Controller = require('./modules/base/controller.js');
 module.exports.Model = require('./modules/base/model.js');
+module.exports.Service = require('./lib/service.js');
