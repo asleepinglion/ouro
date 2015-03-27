@@ -18,9 +18,9 @@ YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS  YSSY    YSS'
 
  */
 
-module.exports.Class = require('superjs-base');
-module.exports.Application = require('./lib/application.js');
-module.exports.Error = require('./lib/error.js');
-module.exports.Controller = require('./modules/base/controller.js');
-module.exports.Model = require('./modules/base/model.js');
-module.exports.Service = require('./lib/service.js');
+module.exports.version = require('./package.json').version;
+module.exports.Class = require('./modules/class/class');
+module.exports.Meta = require('./modules/meta/class');
+module.exports.Modules = require('./modules/modules/class');
+module.exports.Application = require('./modules/application/class');
+module.exports.Error = require('./modules/error/class');

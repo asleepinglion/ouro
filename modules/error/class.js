@@ -1,18 +1,8 @@
 "use strict";
 
-var SuperJS = require('../index');
+var Class = require('superjs-base');
 
-/**
- * A simple error class for SuperJS.
- *
- * @exports Error
- * @namespace SuperJS
- * @extends SuperJS.Class
- */
-
-Error.extend = SuperJS.Class.extend;
-
-module.exports = Error.extend({
+module.exports = Class.extend({
 
   init: function(code, message, additional) {
 
@@ -21,6 +11,8 @@ module.exports = Error.extend({
 
     this.code = code;
     this.message = message;
+
+    this.stack = new Error(message).stack;
 
     if( additional ) {
 
@@ -35,8 +27,7 @@ module.exports = Error.extend({
       });
     }
 
-  },
-
+  }
 
 
 });
