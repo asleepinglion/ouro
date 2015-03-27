@@ -10,7 +10,7 @@ module.exports = Class.extend(EventEmitter, Meta, Modules, {
   init: function() {
 
     //load essential modules that all classes should be able to use
-    this.loadModule('console-log', { build: { subModule: __dirname, shortcut: 'log'}, boot: { objectDepth: 5 } });
+    this.loadModule('console', { build: { subModule: __dirname, shortcut: 'log'}, boot: { objectDepth: 5 } });
     this.loadModule('transform', { build: { subModule: __dirname, shortcut: 'transform' }});
     this.loadModule('validate', { build: { subModule: __dirname, shortcut: 'validate' }});
 

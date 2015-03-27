@@ -4,16 +4,17 @@
     "name": "Aaron Storck",
     "email": "aaronstorck@gmail.com"
   },
-  "version": "0.3.0",
-  "description": "Super-configurable, super-extendable, API framework for Node.JS.",
+  "version": "0.8.0",
+  "description": "Super-configurable, super-extendable, application framework for Node.JS.",
   "main": "index.js",
   "repository": "https://github.com/asleepinglion/superjs",
   "dependencies": {
-    "change-case": "^2.2.0",
+    "change-case": "*",
     "colors": "*",
-    "recursive-merge": "^1.2.0",
+    "recursive-merge": "*",
     "superjs-base": "*",
-    "underscore": "~1.6.0"
+    "underscore": "*",
+    "bluebird": "*",
   },
   "license": "MIT"
 }
