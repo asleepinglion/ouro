@@ -4,7 +4,7 @@
     "name": "Aaron Storck",
     "email": "aaronstorck@gmail.com"
   },
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Super-configurable, super-extendable, application framework for Node.JS.",
   "main": "index.js",
   "repository": "https://github.com/asleepinglion/superjs",
@@ -14,7 +14,7 @@
     "recursive-merge": "*",
     "superjs-base": "*",
     "underscore": "*",
-    "bluebird": "*",
+    "bluebird": "*"
   },
   "license": "MIT"
 }

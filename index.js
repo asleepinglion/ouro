@@ -19,8 +19,8 @@ YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS  YSSY    YSS'
  */
 
 module.exports.version = require('./package.json').version;
-module.exports.Class = require('./modules/class/class');
-module.exports.Meta = require('./modules/meta/class');
-module.exports.Modules = require('./modules/modules/class');
-module.exports.Application = require('./modules/application/class');
-module.exports.Error = require('./modules/error/class');
+module.exports.Class = require('./lib/class/class');
+module.exports.Meta = require('./lib/meta/class');
+module.exports.Loader = require('./lib/loader/class');
+module.exports.Application = require('./lib/application/class');
+module.exports.Error = require('./lib/error/class');
