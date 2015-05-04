@@ -20,6 +20,7 @@ YSS'      YSSP~YSSY    S*S           YSSP  S*S    SSS  YSSY    YSS'
 
 module.exports.version = require('./package.json').version;
 module.exports.Class = require('./lib/class/class');
+module.exports.GetSet = require('./lib/getset/class');
 module.exports.Meta = require('./lib/meta/class');
 module.exports.Loader = require('./lib/loader/class');
 module.exports.Application = require('./lib/application/class');
