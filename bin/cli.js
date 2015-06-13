@@ -2,9 +2,9 @@
 
 "use strict";
 
-var SuperJSCli = require('superjs-cli').Cli;
+var OuroCli = require('ouro-cli').Cli;
 
-var Cli = SuperJSCli.extend({
+var Cli = OuroCli.extend({
 
 });
 

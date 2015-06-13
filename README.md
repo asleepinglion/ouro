@@ -1,3 +1,3 @@
-#SuperJS - Super Extendable Framework for Rapid API Development.
+#Ouro - Super Extendable Framework for Rapid API Development.
 
-> **Disclaimer:** SuperJS is under heavy development at the moment, and breaking changes are likely. 
+> **Disclaimer:** Ouro is under heavy development at the moment, and breaking changes are likely. 

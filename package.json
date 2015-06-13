@@ -1,26 +1,26 @@
 {
-  "name": "superjs",
+  "name": "ouro",
   "author": {
     "name": "Aaron Storck",
     "email": "aaronstorck@gmail.com"
   },
-  "version": "0.8.12",
+  "version": "0.9.0",
   "description": "Super-configurable, super-extendable, application framework for Node.JS.",
   "main": "index.js",
-  "repository": "https://github.com/asleepinglion/superjs",
+  "repository": "https://github.com/asleepinglion/ouro",
   "dependencies": {
     "change-case": "*",
     "colors": "*",
     "recursive-merge": "*",
-    "superjs-base": "*",
-    "superjs-console": "*",
-    "superjs-transform": "*",
-    "superjs-validate": "*",
+    "ouro-base": "*",
+    "ouro-console": "*",
+    "ouro-transform": "*",
+    "ouro-validate": "*",
     "underscore": "*",
     "bluebird": "*",
-    "superjs-config": "*",
-    "superjs-env": "*",
-    "superjs-path": "*"
+    "ouro-config": "*",
+    "ouro-env": "*",
+    "ouro-path": "*"
   },
   "license": "MIT"
 }
