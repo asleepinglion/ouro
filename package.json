@@ -4,8 +4,8 @@
     "name": "Aaron Storck",
     "email": "aaronstorck@gmail.com"
   },
-  "version": "0.9.0",
-  "description": "Super-configurable, super-extendable, application framework for Node.JS.",
+  "version": "0.9.1",
+  "description": "Configurable, extendable, prototyping framework for Node.JS.",
   "main": "index.js",
   "repository": "https://github.com/asleepinglion/ouro",
   "dependencies": {
@@ -16,6 +16,7 @@
     "ouro-console": "*",
     "ouro-transform": "*",
     "ouro-validate": "*",
+    "ouro-sanitize": "*",
     "underscore": "*",
     "bluebird": "*",
     "ouro-config": "*",
