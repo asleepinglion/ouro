@@ -10,7 +10,7 @@
   "repository": "https://github.com/asleepinglion/ouro",
   "dependencies": {
     "change-case": "*",
-    "colors": "*",
+    "@dabh/colors": "*",
     "recursive-merge": "*",
     "ouro-base": "*",
     "ouro-console": "*",
